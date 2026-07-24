@@ -1,6 +1,7 @@
 export type DifficultyLevel = 'EASY' | 'MEDIUM' | 'HARD' | 'EXPERT';
 export type QuestionType = 'THEORY' | 'MULTIPLE_CHOICE' | 'CODING_PRACTICE';
 export type ProgressStatus = 'UNATTEMPTED' | 'ATTEMPTED' | 'SOLVED';
+export type UserRole = 'OWNER' | 'ADMIN' | 'USER';
 
 export interface Category {
   id: string;
@@ -65,6 +66,9 @@ export interface UserProfile {
   lastActiveDate: string;
   targetLevel: 'Junior' | 'Mid-level' | 'Senior';
   totalPoints: number;
+  role: UserRole;
+  email?: string;
+  provider?: 'google' | 'github' | 'email' | string;
 }
 
 export interface DailyActivity {

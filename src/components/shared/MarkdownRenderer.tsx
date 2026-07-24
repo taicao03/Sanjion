@@ -1,5 +1,7 @@
 import React from 'react';
 import { Copy, Check, HelpCircle } from 'lucide-react';
+import { SmartTermTooltip } from './SmartTermTooltip';
+import { findTermDefinition, KNOWN_TERMS_REGEX } from '../../services/termDictionary';
 
 interface MarkdownRendererProps {
   content: string;
@@ -45,12 +47,21 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  // Helper to render paragraph with inline backtick code badges (`code`)
+  // Helper to render paragraph with inline backtick code badges (`code`), bold text (**bold**), and interactive term tooltips
   const renderParagraphWithInlineCode = (text: string) => {
-    const segments = text.split(/(`[^`]+`)/g);
+    // Regex splits by inline code (`...`) and bold text (**...**)
+    const segments = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
     return segments.map((seg, i) => {
       if (seg.startsWith('`') && seg.endsWith('`') && seg.length > 2) {
         const codeText = seg.slice(1, -1);
+        const termDef = findTermDefinition(codeText);
+        if (termDef) {
+          return (
+            <SmartTermTooltip key={i} termText={codeText} definition={termDef}>
+              {codeText}
+            </SmartTermTooltip>
+          );
+        }
         return (
           <code
             key={i}
@@ -60,7 +71,37 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
           </code>
         );
       }
-      return seg;
+
+      if (seg.startsWith('**') && seg.endsWith('**') && seg.length > 4) {
+        const boldText = seg.slice(2, -2);
+        const termDef = findTermDefinition(boldText);
+        if (termDef) {
+          return (
+            <SmartTermTooltip key={i} termText={boldText} definition={termDef}>
+              {boldText}
+            </SmartTermTooltip>
+          );
+        }
+        return (
+          <strong key={i} className="font-extrabold text-slate-900 mx-0.5">
+            {boldText}
+          </strong>
+        );
+      }
+
+      // Check plain text ONLY for exact dictionary keywords using compiled KNOWN_TERMS_REGEX
+      const termParts = seg.split(KNOWN_TERMS_REGEX);
+      return termParts.map((part, pIdx) => {
+        const tDef = findTermDefinition(part);
+        if (tDef) {
+          return (
+            <SmartTermTooltip key={`${i}-${pIdx}`} termText={part} definition={tDef}>
+              {part}
+            </SmartTermTooltip>
+          );
+        }
+        return part;
+      });
     });
   };
 

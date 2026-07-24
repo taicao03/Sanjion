@@ -253,3 +253,30 @@ INSERT INTO questions (category_id, title, slug, difficulty, type, content, expl
   '[{"input":"return true;","expected":true}]',
   10
 ) ON CONFLICT (slug) DO NOTHING;
+
+-- ==========================================
+-- SEED USER PROFILES WITH ROLES (OWNER, ADMIN, USER)
+-- ==========================================
+INSERT INTO user_profiles (id, username, full_name, avatar_url, role, streak_count, total_points, target_level, last_active_date) VALUES
+(
+  'usr-owner-supreme',
+  'taicao_owner',
+  'Cao Tải (Supreme Owner)',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+  'OWNER',
+  42,
+  1250,
+  'Senior',
+  CURRENT_DATE
+),
+(
+  'usr-admin-content',
+  'minhanh_admin',
+  'Minh Anh (Content Admin)',
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+  'ADMIN',
+  15,
+  890,
+  'Senior',
+  CURRENT_DATE
+) ON CONFLICT (id) DO NOTHING;

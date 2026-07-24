@@ -16,7 +16,11 @@ export const storageService = {
       localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(INITIAL_USER_PROFILE));
       return INITIAL_USER_PROFILE;
     }
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    if (!parsed.role) {
+      parsed.role = 'USER';
+    }
+    return parsed;
   },
 
   updateProfile(updates: Partial<UserProfile>): UserProfile {

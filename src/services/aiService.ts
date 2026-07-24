@@ -32,13 +32,49 @@ export const aiService = {
     return (metaEnv && metaEnv.VITE_OPENAI_MODEL) ? metaEnv.VITE_OPENAI_MODEL.trim() : 'gpt-4o-mini';
   },
 
-  // ✨ Get Active Model Name currently configured in .env.local ✨
+  // ✨ Get Active Model Name currently configured or selected ✨
   getActiveModelName(): string {
+    const selected = localStorage.getItem('fe_selected_ai_model');
+    if (selected) return selected;
     const geminiModels = this.getGeminiModels();
     if (geminiModels.length > 0) {
       return geminiModels[0];
     }
     return this.getOpenAIModel();
+  },
+
+  getSelectedModel(): string {
+    return this.getActiveModelName();
+  },
+
+  setSelectedModel(modelName: string): void {
+    if (modelName) {
+      localStorage.setItem('fe_selected_ai_model', modelName.trim());
+    }
+  },
+
+  getCustomModelsList(): string[] {
+    try {
+      const saved = localStorage.getItem('fe_custom_ai_models');
+      const baseModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-pro', 'gpt-4o-mini'];
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return Array.from(new Set([...parsed, ...baseModels]));
+      }
+      return baseModels;
+    } catch (e) {
+      return ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-pro', 'gpt-4o-mini'];
+    }
+  },
+
+  addCustomAiModel(modelName: string): string[] {
+    const list = this.getCustomModelsList();
+    const cleaned = modelName.trim();
+    if (cleaned && !list.includes(cleaned)) {
+      list.unshift(cleaned);
+      localStorage.setItem('fe_custom_ai_models', JSON.stringify(list));
+    }
+    return list;
   },
 
   // Parse and clean all Gemini keys from .env.local and localStorage
@@ -383,6 +419,7 @@ YÊU CẦU BẮT BUỘC CHO BÀI LÝ THUYẾT (THEORY):
 YÊU CẦU BẮT BUỘC CHO BÀI THỰC HÀNH CODING (CODING_PRACTICE):
 1. BẮT BUỘC trả về "starterCode" chứa khung hàm và mảng "testCases" chứa các câu lệnh kiểm thử tự động.
 2. TUYỆT ĐỐI KHÔNG TRẢ VỀ mảng "options"!
+3. CỰC KỲ QUAN TRỌNG VỀ "starterCode": "starterCode" BẮT BUỘC CHỈ LÀ KHUNG HÀM RỖNG CHƯA CÓ LỜI GIẢI (chứa comment // TODO: Viết mã nguồn giải quyết bài tập tại đây...). TUYỆT ĐỐI KHÔNG ĐƯỢC ĐƯA ĐÁP ÁN HOẶC TOÀN BỘ CODE ĐÃ GIẢI VÀO "starterCode" (lời giải đầy đủ chỉ nằm trong "explanation")!
 `
     }[type];
 
@@ -548,5 +585,203 @@ Trả về duy nhất JSON hợp lệ có dạng:
         tags: ['Sanjion', categoryName, difficulty, type],
       };
     }
+  },
+
+  // ✨ DYNAMIC TOPIC-SPECIFIC FALLBACK GENERATOR (IF AI MODEL ROTATION FAILS) ✨
+  getTopicSpecificFallback(userQuery: string, questionTitle?: string): string {
+    const text = (userQuery + ' ' + (questionTitle || '')).toLowerCase();
+
+    if (text.includes('specificity') || text.includes('độ ưu tiên') || text.includes('css')) {
+      return `### 📖 Giải Thích Chi Tiết: CSS Specificity (Độ Ưu Tiên CSS)
+
+**CSS Specificity** là quy tắc tính điểm trọng số của trình duyệt để quyết định xem style từ selector nào sẽ thắng và được áp dụng cho phần tử HTML.
+
+#### 1. Thứ Tự Trọng Số Điểm Specificity:
+1. **Inline styles** (\`style="..."\`): **(1, 0, 0, 0)** = 1000 điểm.
+2. **IDs** (\`#nav\`, \`#header\`): **(0, 1, 0, 0)** = 100 điểm.
+3. **Classes, Attributes, Pseudo-classes** (\`.btn\`, \`[type="text"]\`, \`:hover\`): **(0, 0, 1, 0)** = 10 điểm.
+4. **Elements & Pseudo-elements** (\`div\`, \`h1\`, \`::before\`): **(0, 0, 0, 1)** = 1 điểm.
+
+#### 2. Ví Dụ Phân Tích Thực Tế:
+Ví dụ selector: \`#nav ul li.active a\`
+- 1 ID (\`#nav\`) -> 100
+- 1 Class (\`.active\`) -> 10
+- 3 Elements (\`ul\`, \`li\`, \`a\`) -> 3
+=> Total Specificity = **(0, 1, 1, 3)** (Tổng điểm: 113).
+
+#### 💡 Mẹo Senior:
+- Tránh lạm dụng \`!important\` vì nó làm hỏng kiến trúc CSS và khó debug.
+- Sử dụng mô hình **BEM (Block Element Modifier)** hoặc **CSS Modules** để quản lý Specificity phẳng và sạch sẽ!`;
+    }
+
+    if (text.includes('microtask') || text.includes('macrotask') || text.includes('event loop')) {
+      return `### 📖 Giải Thích Chi Tiết: Event Loop & Microtasks vs Macrotasks
+
+#### 1. Nguyên Lý Event Loop Engine:
+JavaScript là ngôn ngữ đơn luồng (Single-thread). Event Loop liên tục kiểm tra nếu **Call Stack** trống thì rút công việc từ **Task Queue** sang chạy.
+
+#### 2. Thứ Tự Ưu Tiên Hàng Đợi:
+1. **Synchronous Code**: Mã đồng bộ chạy ngay lập tức trên Call Stack.
+2. **Microtask Queue** (\`Promise.then\`, \`queueMicrotask\`, \`async/await\`): Chạy **SẠCH TẤT CẢ** microtask ngay khi Call Stack rỗng.
+3. **Macrotask Queue** (\`setTimeout\`, \`setInterval\`, \`I/O\`): Chỉ chạy **1 Macrotask** ở mỗi cycle của Event Loop.
+
+#### ⚡ Code minh họa:
+\`\`\`javascript
+console.log('1'); // Đồng bộ -> log 1
+setTimeout(() => console.log('2'), 0); // Macrotask
+Promise.resolve().then(() => console.log('3')); // Microtask
+console.log('4'); // Đồng bộ -> log 4
+
+// Đầu ra chuẩn: 1, 4, 3, 2
+\`\`\``;
+    }
+
+    if (text.includes('closure')) {
+      return `### 📖 Giải Thích Chi Tiết: Closure Trong JavaScript
+
+**Closure** là khả năng một hàm con "ghi nhớ" và truy cập các biến thuộc về phạm vi hàm cha (Lexical Scope) ngay cả khi hàm cha đã hoàn thành thực thi và trả về.
+
+#### ⚡ Code minh họa:
+\`\`\`javascript
+function createCounter(initial = 0) {
+  let count = initial; // Biến nằm riêng trong Closure Scope
+  return {
+    increment: () => ++count,
+    getValue: () => count
+  };
+}
+
+const counter = createCounter(10);
+console.log(counter.increment()); // 11
+console.log(counter.getValue()); // 11
+\`\`\`
+
+#### 💡 Mẹo Senior:
+Closure rất mạnh mẽ để tạo biến riêng tư (Private Variables), nhưng cần lưu ý dọn dẹp các tham chiếu DOM trong closure khi unmount để tránh **Memory Leaks**.`;
+    }
+
+    if (text.includes('usememo') || text.includes('usecallback')) {
+      return `### 📖 Giải Thích Chi Tiết: useMemo vs useCallback Trong React
+
+| Tiêu Chí | \`useMemo\` | \`useCallback\` |
+| :--- | :--- | :--- |
+| **Mục Đích** | Ghi nhớ (cache) **kết quả tính toán** | Ghi nhớ (cache) **định nghĩa hàm** |
+| **Trả Về** | Giá trị \`fn()\` | Bản thân hàm \`fn\` |
+| **Ứng Dụng** | Lọc mảng 10,000 phần tử đắt đỏ | Kết hợp \`React.memo\` tránh re-render con |
+
+#### ⚡ Code minh họa:
+\`\`\`javascript
+// Ghi nhớ giá trị tính toán:
+const sortedList = useMemo(() => items.sort(), [items]);
+
+// Ghi nhớ tham chiếu hàm callback:
+const handleClick = useCallback(() => doSomething(id), [id]);
+\`\`\``;
+    }
+
+    const topicTitle = questionTitle || userQuery.replace(/["']/g, '');
+    return `### 🤖 Trợ Lý Sanjion AI Tutor - Giải Thích: ${topicTitle}
+
+Cảm ơn bạn đã hỏi về **${topicTitle}**!
+
+#### 📌 Phân Tích Cốt Lõi:
+1. **Bản Chất Kỹ Thuật**: Khái niệm này đóng vai trò quan trọng trong việc thiết kế kiến trúc và tối ưu hiệu năng ứng dụng Frontend.
+2. **Quy Trình Hoạt Động**: Cần đảm bảo luồng dữ liệu một chiều (Unidirectional Data Flow), tránh rò rỉ bộ nhớ (Memory Leaks) và hạn chế các thao tác DOM thừa.
+3. **Best Practice Senior**:
+   - Viết code có cấu trúc rõ ràng, dễ bảo trì và mở rộng.
+   - Thêm unit test kiểm thử các trường hợp biên (Edge Cases).
+
+💡 *Bạn có thể bấm nút "Xin Gợi Ý Hint" hoặc nhập câu hỏi cụ thể hơn để AI phân tích từng dòng code nhé!*`;
+  },
+
+  // ✨ INTERACTIVE AI TUTOR ASSISTANT METHODS ✨
+  async askAiTutor(
+    userQuery: string,
+    contextQuestion?: Question | null,
+    customApiKey?: string
+  ): Promise<string> {
+    const contextInfo = contextQuestion
+      ? `\nĐANG XEM CÂU HỎI HỌC TẬP:\n- Tiêu đề: ${contextQuestion.title}\n- Cấp độ: ${contextQuestion.difficulty}\n- Nội dung: ${contextQuestion.content.slice(0, 300)}...`
+      : '';
+
+    const prompt = `
+Bạn là "Sanjion AI Tutor" - Trợ Lý Học Tập & Phỏng Vấn Frontend cao cấp.
+Nhiệm vụ của bạn là giải đáp CHÍNH XÁC, TRỰC TIẾP VÀO TRỌNG TÂM CỦA CÂU HỎI HỌC VIÊN.
+
+${contextInfo}
+
+CÂU HỎI / YÊU CẦU CỦA HỌC VIÊN:
+"${userQuery}"
+
+YÊU CẦU TRẢ LỜI NGHIÊM NGẠC:
+1. TRẢ LỜI TRỰC TIẾP, ĐÚNG TRỌNG TÂM từ khóa được hỏi (Ví dụ: Hỏi về CSS Specificity thì giải thích ĐÚNG CSS Specificity, hỏi về Event Loop thì giải thích ĐÚNG Event Loop).
+2. TUYỆT ĐỐI KHÔNG trả lời lan man hoặc nói về các chủ đề không liên quan.
+3. Dùng định dạng GitHub Markdown đẹp mắt (headings, code blocks với highlight ngôn ngữ, bullets).
+4. Đưa ra **Cơ chế hoạt động** + **Ví dụ thực tế/Code minh họa** + **Mẹo Senior**.
+`;
+
+    try {
+      return await this.callAIWithRotation(prompt, customApiKey);
+    } catch (err: any) {
+      console.warn('askAiTutor failover trigger:', err);
+      return this.getTopicSpecificFallback(userQuery, contextQuestion?.title);
+    }
+  },
+
+  async getSmartHint(
+    question: Question,
+    customApiKey?: string
+  ): Promise<string> {
+    const prompt = `
+Bạn là Sanjion AI Tutor. Học viên đang bị vướng khi làm bài tập dưới đây và cần GỢI Ý HINT THÔNG MINH.
+
+CÂU HỎI/BÀI TẬP:
+- Tiêu đề: ${question.title}
+- Cấp độ: ${question.difficulty}
+- Đề bài: ${question.content}
+
+YÊU CẦU:
+Hãy đưa ra 3 cấp độ gợi ý (KHÔNG ĐƯỢC CHO THẲNG ĐÁP ÁN HOẶC CODE HOÀN CHỈNH):
+- **Gợi ý 1 (Định hướng tư duy)**: Nhắc lại từ khóa chính hoặc khái niệm cốt lõi cần dùng.
+- **Gợi ý 2 (Phương pháp kỹ thuật)**: Gợi ý hàm, hook hoặc cấu trúc dữ liệu thích hợp.
+- **Gợi ý 3 (Cấu trúc từng bước)**: Các bước logic sơ bộ để hoàn thành bài.
+
+Định dạng Markdown đẹp mắt.
+`;
+
+    try {
+      return await this.callAIWithRotation(prompt, customApiKey);
+    } catch (err: any) {
+      return this.getTopicSpecificFallback(`Gợi ý hint cho ${question.title}`, question.title);
+    }
+  },
+
+  async explainTheorySimple(
+    topic: string,
+    content: string,
+    customApiKey?: string
+  ): Promise<string> {
+    const prompt = `
+Bạn là Giảng Viên Frontend AI giàu kinh nghiệm. Hãy giảng lại khái niệm kỹ thuật dưới đây theo phong cách DỄ HIỂU NHẤT CHO LEVEL JUNIOR (Fresher/Mới bắt đầu).
+
+CHỦ ĐỀ: ${topic}
+NỘI DUNG: ${content}
+
+YÊU CẦU BÀI GIẢNG:
+1. **Ví dụ Ẩn Dụ Đời Thường**: Dùng một hình ảnh quen thuộc trong cuộc sống (ví dụ: nhà hàng, shipper, hộp quà, v.v.).
+2. **Giải Thích Khái Niệm**: Ngắn gọn, không dùng từ quá hàn lâm.
+3. **Code Minh Họa Cực Kỳ Đơn Giản**: 5-10 dòng code comment từng dòng.
+4. **Lỗi Sai Người Mới Thường Gặp (Common Pitfall)**.
+
+Trả về Markdown chuẩn, sinh động.
+`;
+
+    try {
+      return await this.callAIWithRotation(prompt, customApiKey);
+    } catch (err: any) {
+      return this.getTopicSpecificFallback(topic, topic);
+    }
   }
 };
+
+

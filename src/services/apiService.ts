@@ -34,6 +34,48 @@ export const apiService = {
     return isSupabaseConfigured;
   },
 
+  // Fetch Real Database Users from Supabase
+  async getUsersFromDatabase(): Promise<any[]> {
+    if (!isSupabaseConfigured || !supabase) {
+      return [];
+    }
+
+    try {
+      // Try user_profiles first
+      let { data, error } = await supabase.from('user_profiles').select('*');
+      
+      // If user_profiles is empty or errored, try profiles table
+      if (error || !data || data.length === 0) {
+        const fallbackRes = await supabase.from('profiles').select('*');
+        if (fallbackRes.data && fallbackRes.data.length > 0) {
+          data = fallbackRes.data;
+        }
+      }
+
+      if (!data) return [];
+
+      return data.map((p: any) => ({
+        id: p.id,
+        username: p.username || p.email?.split('@')[0] || 'user',
+        fullName: p.full_name || p.fullName || p.name || 'Học Viên Sanjion',
+        avatarUrl: p.avatar_url || p.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=sanjion',
+        streakCount: p.streak_count || p.streakCount || 0,
+        lastActiveDate: p.last_active_date || new Date().toISOString().split('T')[0],
+        targetLevel: p.target_level || 'Junior',
+        totalPoints: p.total_points || p.totalPoints || 0,
+        role: p.role || 'USER',
+        email: p.email || `${p.username || 'user'}@sanjion.dev`,
+        joinedDate: p.created_at ? p.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+        status: p.status || 'ACTIVE',
+        solvedQuestionsCount: p.solved_count || 0,
+        provider: p.provider || (p.email?.includes('gmail') ? 'google' : p.email?.includes('github') ? 'github' : 'email'),
+      }));
+    } catch (err) {
+      console.warn('Failed to fetch real DB users:', err);
+      return [];
+    }
+  },
+
   // Fetch Categories from Supabase DB or Fallback to Roadmap.sh Categories
   async getCategories(): Promise<Category[]> {
     if (!isSupabaseConfigured || !supabase) {

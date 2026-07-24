@@ -27,10 +27,13 @@ import { GenerateQuestionModal } from './components/questions/GenerateQuestionMo
 import { ProgressOverview } from './components/dashboard/ProgressOverview';
 import { CategoryBreakdownChart } from './components/dashboard/CategoryBreakdownChart';
 import { StreakHeatmap } from './components/dashboard/StreakHeatmap';
+import { RoadmapView } from './components/roadmap/RoadmapView';
+import { AiTutorWidget } from './components/ai/AiTutorWidget';
 import { AuthModal } from './components/auth/AuthModal';
+import { AdminDashboard } from './components/admin/AdminDashboard';
 
 export function App() {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'questions' | 'workspace' | 'bookmarks'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'questions' | 'workspace' | 'bookmarks' | 'roadmap' | 'admin'>('roadmap');
   const [categories, setCategories] = useState<Category[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [progressMap, setProgressMap] = useState<Record<string, UserProgress>>({});
@@ -69,9 +72,11 @@ export function App() {
   };
 
   const loadUserData = async () => {
-    const storedUser = await authService.getSessionUser();
-    if (storedUser) {
+    const { user } = await authService.getSessionUser();
+    if (user) {
       setIsLoggedIn(true);
+    } else {
+      setIsLoggedIn(false);
     }
     const prof = storageService.getProfile();
     setProfile(prof);
@@ -157,6 +162,11 @@ export function App() {
   const handleLogout = async () => {
     await authService.logout();
     setIsLoggedIn(false);
+    const defaultProfile = storageService.resetProfile();
+    setProfile(defaultProfile);
+    if (currentView === 'admin') {
+      setCurrentView('roadmap');
+    }
     await loadUserData();
   };
 
@@ -205,12 +215,38 @@ export function App() {
             question={activeQuestion}
             progress={progressMap[activeQuestion.id] || (activeQuestion.slug ? progressMap[activeQuestion.slug] : undefined)}
             isBookmarked={bookmarks.includes(activeQuestion.id)}
-            onBack={() => setCurrentView('questions')}
+            onBack={() => setCurrentView('roadmap')}
             onSolveQuestion={handleSolveQuestion}
             onToggleBookmark={handleToggleBookmark}
             allQuestions={questions}
             onSelectQuestion={handleSelectQuestion}
             onGenerateNextWithAI={handleGenerateNextSameTopicSameDifficulty}
+          />
+        ) : currentView === 'admin' ? (
+          /* Admin Dashboard & User Roles Management View */
+          <AdminDashboard
+            currentProfile={profile}
+            questions={questions}
+            onProfileRoleChanged={(newRole) => {
+              const updated = storageService.updateProfile({ role: newRole });
+              setProfile(updated);
+            }}
+            onGenerateNewQuestion={() => setIsGenerateModalOpen(true)}
+            onSelectQuestion={handleSelectQuestion}
+            onSelectView={(v) => setCurrentView(v as any)}
+          />
+        ) : currentView === 'roadmap' ? (
+          /* Junior to Senior Roadmap View */
+          <RoadmapView
+            questions={questions}
+            progressMap={progressMap}
+            profile={profile}
+            onSelectQuestion={handleSelectQuestion}
+            onOpenAiAssistant={() => {
+              // Open AI Assistant by finding floating button or trigger
+              const btn = document.querySelector('button[title*="Trợ Lý AI Tutor"], button:has(svg.animate-bounce)') as HTMLButtonElement;
+              if (btn) btn.click();
+            }}
           />
         ) : currentView === 'dashboard' ? (
           /* Dashboard View */
@@ -404,6 +440,12 @@ export function App() {
         onClose={() => setIsGenerateModalOpen(false)}
         categories={categories}
         onQuestionGenerated={handleQuestionGenerated}
+      />
+
+      {/* Floating AI Tutor Assistant Widget (Accessible Anywhere 24/7) */}
+      <AiTutorWidget
+        activeQuestion={activeQuestion}
+        onOpenApiKeyModal={() => setIsGenerateModalOpen(true)}
       />
     </div>
   );
