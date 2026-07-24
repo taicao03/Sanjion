@@ -1,16 +1,16 @@
 import { Category, Question, UserProfile } from '../types';
 
 export const INITIAL_USER_PROFILE: UserProfile = {
-  id: 'guest',
-  username: 'guest',
-  fullName: 'Sanjion Developer',
-  avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sanjion',
-  streakCount: 1,
+  id: '',
+  username: '',
+  fullName: 'Chưa Đăng Nhập',
+  avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=unauthenticated',
+  streakCount: 0,
   lastActiveDate: new Date().toISOString().split('T')[0],
   targetLevel: 'Senior',
   totalPoints: 0,
   role: 'USER',
-  email: 'guest@sanjion.dev',
+  email: '',
 };
 
 export const MOCK_CATEGORIES: Category[] = [

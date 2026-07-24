@@ -42,8 +42,7 @@ export const authService = {
         .eq('user_id', user.id);
 
       const dbProgressMap: Record<string, UserProgress> = {};
-      let totalSolvedPoints = 0;
-
+      
       if (userProgressList && Array.isArray(userProgressList)) {
         userProgressList.forEach((item: any) => {
           dbProgressMap[item.question_id] = {
@@ -55,32 +54,53 @@ export const authService = {
             solvedAt: item.solved_at,
             lastAttemptAt: item.last_attempt_at,
           };
-          if (item.status === 'SOLVED') {
-            totalSolvedPoints += item.score || 0;
-          }
         });
-
-        // Sync THIS USER's progress into local storage
-        localStorage.setItem('fe_sanjion_v2_progress', JSON.stringify(dbProgressMap));
       }
 
-      // Upsert profile into Supabase DB if not saved yet
-      if (!profileData && user.id) {
+      const localUserProgress = storageService.getAllProgress(user.id);
+      const mergedProgressMap = { ...localUserProgress, ...dbProgressMap };
+      storageService.setAllProgress(mergedProgressMap, user.id);
+
+      let totalSolvedPoints = 0;
+      Object.values(mergedProgressMap).forEach((item) => {
+        if (item.status === 'SOLVED') {
+          totalSolvedPoints += item.score || 0;
+        }
+      });
+
+      const localProf = storageService.getProfile();
+      const detectedProvider = user.app_metadata?.provider || user.identities?.[0]?.provider || meta.provider || (user.email?.includes('gmail') ? 'google' : user.email?.includes('github') ? 'github' : 'email');
+
+      if (user.id) {
         try {
           await supabase.from('user_profiles').upsert({
             id: user.id,
             full_name: finalFullName,
+            username: finalUsername,
+            email: user.email,
             avatar_url: finalAvatarUrl,
             streak_count: totalSolvedPoints > 0 ? 1 : 0,
             total_points: totalSolvedPoints,
             last_active_date: new Date().toISOString().split('T')[0],
+            role: profileData?.role || localProf.role || 'USER',
+            provider: detectedProvider,
           });
         } catch (err) {
-          console.warn('Upsert profile error:', err);
+          try {
+            await supabase.from('user_profiles').upsert({
+              id: user.id,
+              full_name: finalFullName,
+              avatar_url: finalAvatarUrl,
+              streak_count: totalSolvedPoints > 0 ? 1 : 0,
+              total_points: totalSolvedPoints,
+              last_active_date: new Date().toISOString().split('T')[0],
+            });
+          } catch (e2) {
+            console.warn('Upsert profile error:', e2);
+          }
         }
       }
 
-      const localProf = storageService.getProfile();
       const highestPoints = Math.max(
         profileData?.total_points || 0,
         totalSolvedPoints,
@@ -98,6 +118,7 @@ export const authService = {
         totalPoints: highestPoints,
         role: profileData?.role || localProf.role || 'USER',
         email: user.email,
+        provider: detectedProvider,
       };
 
       // Sync user profile to local storage & admin accounts list
@@ -243,43 +264,55 @@ export const authService = {
     storageService.clearAllData();
 
     if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider,
-          options: {
-            redirectTo: window.location.origin,
-          },
-        });
-        if (!error && data) return data;
-      } catch (e) {
-        console.warn(`Supabase OAuth ${provider} fallback to local mode:`, e);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        console.error(`Supabase OAuth ${provider} error:`, error);
+        throw error;
       }
+
+      if (data) return data;
     }
 
-    // Fallback simulation for Google & GitHub OAuth when Supabase OAuth is not configured on Cloud
+    // Fallback simulation for Google & GitHub OAuth when Supabase is not configured locally
     const isGoogle = provider === 'google';
-    const mockOAuthProfile: UserProfile = {
+    const userEmailInput = window.prompt(
+      `[Chế độ Local Sandbox - Chưa kết nối Supabase Cloud]\nVui lòng nhập Email ${provider.toUpperCase()} của bạn để thử nghiệm:`,
+      isGoogle ? 'user.dev@gmail.com' : 'dev.pro@github.com'
+    );
+
+    if (!userEmailInput) {
+      throw new Error('Đã hủy thao tác đăng nhập.');
+    }
+
+    const email = userEmailInput.trim();
+    const username = email.split('@')[0];
+
+    const sandboxOAuthProfile: UserProfile = {
       id: `oauth-${provider}-${Date.now()}`,
-      username: isGoogle ? 'google_dev' : 'github_pro',
-      fullName: isGoogle ? 'Học Viên Google OAuth' : 'Học Viên GitHub Developer',
-      avatarUrl: isGoogle
-        ? 'https://api.dicebear.com/7.x/avataaars/svg?seed=google_user'
-        : 'https://api.dicebear.com/7.x/avataaars/svg?seed=github_dev',
-      streakCount: 3,
+      username: username,
+      fullName: `Thành Viên ${provider.toUpperCase()} (${username})`,
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+      streakCount: 1,
       lastActiveDate: new Date().toISOString().split('T')[0],
       targetLevel: 'Senior',
-      totalPoints: 250,
+      totalPoints: 100,
       role: 'USER',
-      email: isGoogle ? 'user.google@gmail.com' : 'dev.github@github.com',
+      email: email,
       provider: provider,
     };
 
-    storageService.updateProfile(mockOAuthProfile);
-    adminService.saveOAuthAccount(mockOAuthProfile);
+    storageService.updateProfile(sandboxOAuthProfile);
+    adminService.saveOAuthAccount(sandboxOAuthProfile);
 
     // Refresh page to load session
     window.location.reload();
-    return { user: { id: mockOAuthProfile.id, email: mockOAuthProfile.email }, profile: mockOAuthProfile };
+    return { user: { id: sandboxOAuthProfile.id, email: sandboxOAuthProfile.email }, profile: sandboxOAuthProfile };
   },
 
   // Logout & Clear all cached user data

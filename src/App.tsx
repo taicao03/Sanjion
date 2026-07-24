@@ -18,6 +18,7 @@ import { apiService } from './services/apiService';
 import { storageService } from './services/storageService';
 import { authService } from './services/authService';
 import { aiService } from './services/aiService';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
 
 import { Navbar } from './components/layout/Navbar';
 import { QuestionCard } from './components/questions/QuestionCard';
@@ -61,6 +62,22 @@ export function App() {
 
   useEffect(() => {
     loadInitialData();
+
+    if (isSupabaseConfigured && supabase) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, _session: any) => {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+          await loadUserData();
+        } else if (event === 'SIGNED_OUT') {
+          setIsLoggedIn(false);
+          storageService.clearAllData();
+          setProfile(storageService.getProfile());
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
   }, []);
 
   const loadInitialData = async () => {
@@ -72,15 +89,17 @@ export function App() {
   };
 
   const loadUserData = async () => {
-    const { user } = await authService.getSessionUser();
-    if (user) {
+    const { user, profile: fetchedProfile } = await authService.getSessionUser();
+    if (user && fetchedProfile) {
       setIsLoggedIn(true);
+      setProfile(fetchedProfile);
+      setProgressMap(storageService.getAllProgress(fetchedProfile.id));
     } else {
       setIsLoggedIn(false);
+      const prof = storageService.getProfile();
+      setProfile(prof);
+      setProgressMap(storageService.getAllProgress(prof.id));
     }
-    const prof = storageService.getProfile();
-    setProfile(prof);
-    setProgressMap(storageService.getAllProgress());
     setActivityHistory(storageService.getActivityHistory());
     setBookmarks(storageService.getBookmarks());
   };
@@ -96,6 +115,11 @@ export function App() {
     score: number,
     userAnswer?: string
   ) => {
+    if (!isLoggedIn || !profile.id) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     await apiService.saveUserProgress(
       profile.id,
       questionId,
@@ -106,7 +130,7 @@ export function App() {
     );
     const updatedProfile = storageService.getProfile();
     setProfile(updatedProfile);
-    setProgressMap(storageService.getAllProgress());
+    setProgressMap(storageService.getAllProgress(profile.id));
     setActivityHistory(storageService.getActivityHistory());
   };
 

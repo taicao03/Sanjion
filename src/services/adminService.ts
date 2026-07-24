@@ -6,7 +6,7 @@ export interface AdminUserItem extends UserProfile {
   solvedQuestionsCount: number;
 }
 
-const LOCAL_STORAGE_USERS_KEY = 'sanjion_admin_users';
+const LOCAL_STORAGE_USERS_KEY = 'sanjion_permanent_users_v2';
 
 export const INITIAL_USERS: AdminUserItem[] = [
   {
@@ -23,6 +23,7 @@ export const INITIAL_USERS: AdminUserItem[] = [
     joinedDate: '2026-01-01',
     status: 'ACTIVE',
     solvedQuestionsCount: 24,
+    provider: 'email',
   },
 ];
 
@@ -32,9 +33,7 @@ export const adminService = {
       const stored = localStorage.getItem(LOCAL_STORAGE_USERS_KEY);
       if (stored) {
         const parsed: AdminUserItem[] = JSON.parse(stored);
-        // Filter out old dummy mock users
-        const realOnly = parsed.filter(u => !['usr-admin-01', 'usr-user-01', 'usr-user-02', 'usr-user-03'].includes(u.id));
-        return realOnly;
+        return parsed.filter(u => u.id !== 'guest' && u.username !== 'guest' && u.id !== '');
       }
     } catch (e) {
       console.warn('Error reading admin users:', e);
@@ -45,17 +44,22 @@ export const adminService = {
 
   saveUsers(users: AdminUserItem[]): void {
     try {
-      localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(users));
+      const cleanUsers = users.filter(u => u.id !== 'guest' && u.username !== 'guest' && u.id !== '');
+      localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(cleanUsers));
     } catch (e) {
       console.warn('Error saving admin users:', e);
     }
   },
 
   saveOAuthAccount(profile: UserProfile): void {
-    if (!profile || !profile.id || profile.id === 'guest') return;
+    if (!profile || !profile.id || profile.id === 'guest' || profile.id === '') return;
 
     const users = this.getUsers();
-    const existingIndex = users.findIndex(u => u.id === profile.id || (profile.email && u.email === profile.email));
+    const existingIndex = users.findIndex(u => u.id === profile.id || (!!profile.email && u.email === profile.email));
+
+    const detectedProvider = profile.provider || 
+      (profile.email?.includes('gmail') ? 'google' : 
+       profile.email?.includes('github') ? 'github' : 'email');
 
     const accountItem: AdminUserItem = {
       id: profile.id,
@@ -71,10 +75,17 @@ export const adminService = {
       joinedDate: new Date().toISOString().split('T')[0],
       status: 'ACTIVE',
       solvedQuestionsCount: 0,
+      provider: detectedProvider,
     };
 
     if (existingIndex > -1) {
-      users[existingIndex] = { ...users[existingIndex], ...accountItem };
+      const existing = users[existingIndex];
+      users[existingIndex] = {
+        ...existing,
+        ...accountItem,
+        role: existing.role !== 'USER' ? existing.role : accountItem.role,
+        provider: (accountItem.provider && accountItem.provider !== 'email') ? accountItem.provider : (existing.provider || accountItem.provider),
+      };
     } else {
       users.unshift(accountItem);
     }
@@ -83,16 +94,14 @@ export const adminService = {
   },
 
   updateUserRole(userId: string, newRole: UserRole, operatorRole: UserRole): boolean {
-    // Permission check: ADMIN cannot change an OWNER's role or promote someone to OWNER
     if (operatorRole !== 'OWNER') {
-      if (newRole === 'OWNER') return false; // Only OWNER can promote to OWNER
+      if (newRole === 'OWNER') return false;
     }
 
     const users = this.getUsers();
     const targetIndex = users.findIndex(u => u.id === userId);
     if (targetIndex === -1) return false;
 
-    // Prevent demoting the supreme owner if operator is not owner
     if (users[targetIndex].role === 'OWNER' && operatorRole !== 'OWNER') {
       return false;
     }
@@ -119,12 +128,18 @@ export const adminService = {
   },
 
   deleteUser(userId: string, operatorRole: UserRole): boolean {
-    if (operatorRole !== 'OWNER') return false; // Only OWNER can delete users
+    if (operatorRole === 'USER') return false;
 
     const users = this.getUsers();
-    const filtered = users.filter(u => u.id !== userId);
-    if (filtered.length === users.length) return false;
+    const target = users.find(u => u.id === userId);
+    if (!target) return false;
 
+    // ADMIN cannot delete OWNER or another ADMIN
+    if (operatorRole === 'ADMIN' && (target.role === 'OWNER' || target.role === 'ADMIN')) {
+      return false;
+    }
+
+    const filtered = users.filter(u => u.id !== userId);
     this.saveUsers(filtered);
     return true;
   },
@@ -140,17 +155,18 @@ export const adminService = {
       avatarUrl: newUser.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
       streakCount: 0,
       lastActiveDate: new Date().toISOString().split('T')[0],
-      targetLevel: newUser.targetLevel || 'Junior',
+      targetLevel: 'Junior',
       totalPoints: 0,
       role: newUser.role || 'USER',
       email: newUser.email || 'new.user@sanjion.dev',
       joinedDate: new Date().toISOString().split('T')[0],
       status: 'ACTIVE',
       solvedQuestionsCount: 0,
+      provider: 'email',
     };
 
-    users.push(userItem);
+    users.unshift(userItem);
     this.saveUsers(users);
     return userItem;
-  }
+  },
 };

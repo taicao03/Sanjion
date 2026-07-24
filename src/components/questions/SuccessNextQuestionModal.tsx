@@ -39,8 +39,8 @@ export const SuccessNextQuestionModal: React.FC<SuccessNextQuestionModalProps> =
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn">
-      <div className="bg-white border border-pink-200 rounded-3xl max-w-md w-full p-6 shadow-2xl relative text-center overflow-hidden">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn">
+      <div className="bg-white border border-pink-200/90 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative text-center my-auto max-h-[90vh] overflow-y-auto animate-scaleUp">
         {/* Glow Top Accent */}
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-40 h-40 bg-gradient-to-tr from-pink-400 to-amber-300 rounded-full opacity-30 blur-2xl pointer-events-none"></div>
 

@@ -37,13 +37,32 @@ export const storageService = {
   },
 
   // --- Progress ---
-  getAllProgress(): Record<string, UserProgress> {
-    const data = localStorage.getItem(STORAGE_KEYS.USER_PROGRESS);
+  getAllProgress(userId?: string): Record<string, UserProgress> {
+    const prof = this.getProfile();
+    const targetId = userId || prof.id;
+    
+    let data = null;
+    if (targetId) {
+      data = localStorage.getItem(`fe_sanjion_v2_progress_${targetId}`);
+    }
+    if (!data) {
+      data = localStorage.getItem(STORAGE_KEYS.USER_PROGRESS);
+    }
     return data ? JSON.parse(data) : {};
   },
 
-  getProgress(questionId: string, questionSlug?: string): UserProgress | null {
-    const all = this.getAllProgress();
+  setAllProgress(progressMap: Record<string, UserProgress>, userId?: string): void {
+    const prof = this.getProfile();
+    const targetId = userId || prof.id;
+    
+    localStorage.setItem(STORAGE_KEYS.USER_PROGRESS, JSON.stringify(progressMap));
+    if (targetId) {
+      localStorage.setItem(`fe_sanjion_v2_progress_${targetId}`, JSON.stringify(progressMap));
+    }
+  },
+
+  getProgress(questionId: string, questionSlug?: string, userId?: string): UserProgress | null {
+    const all = this.getAllProgress(userId);
     if (all[questionId]) return all[questionId];
     if (questionSlug && all[questionSlug]) return all[questionSlug];
     return null;
@@ -54,9 +73,12 @@ export const storageService = {
     status: 'SOLVED' | 'ATTEMPTED',
     scoreEarned: number,
     userAnswer?: string,
-    questionSlug?: string
+    questionSlug?: string,
+    userId?: string
   ): UserProgress {
-    const all = this.getAllProgress();
+    const prof = this.getProfile();
+    const targetId = userId || prof.id;
+    const all = this.getAllProgress(targetId);
     const existing = all[questionId] || (questionSlug ? all[questionSlug] : undefined);
 
     const isFirstTimeSolved = status === 'SOLVED' && (!existing || existing.status !== 'SOLVED');
@@ -71,21 +93,20 @@ export const storageService = {
       lastAttemptAt: new Date().toISOString(),
     };
 
-    // Key by both questionId and questionSlug for 100% reliable lookup across DB and Local AI questions
     all[questionId] = updated;
     if (questionSlug) {
       all[questionSlug] = updated;
     }
-    localStorage.setItem(STORAGE_KEYS.USER_PROGRESS, JSON.stringify(all));
+
+    this.setAllProgress(all, targetId);
 
     // Add points & update streak if first time solved
     if (isFirstTimeSolved) {
-      const profile = this.getProfile();
       const today = new Date().toISOString().split('T')[0];
-      const newStreak = profile.lastActiveDate === today ? profile.streakCount : (profile.streakCount || 0) + 1;
+      const newStreak = prof.lastActiveDate === today ? prof.streakCount : (prof.streakCount || 0) + 1;
 
       this.updateProfile({ 
-        totalPoints: profile.totalPoints + scoreEarned,
+        totalPoints: (prof.totalPoints || 0) + scoreEarned,
         streakCount: newStreak === 0 ? 1 : newStreak,
         lastActiveDate: today
       });
@@ -135,8 +156,5 @@ export const storageService = {
 
   clearAllData() {
     localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
-    localStorage.removeItem(STORAGE_KEYS.USER_PROGRESS);
-    localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
-    localStorage.removeItem(STORAGE_KEYS.DAILY_ACTIVITY);
   }
 };

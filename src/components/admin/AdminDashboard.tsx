@@ -67,6 +67,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newCustomModelInput, setNewCustomModelInput] = useState<string>('');
   const [aiSaveSuccessNotice, setAiSaveSuccessNotice] = useState<string | null>(null);
 
+  const [providerFilter, setProviderFilter] = useState<'ALL' | 'google' | 'github' | 'email'>('ALL');
+
   const currentUserRole = currentProfile.role || 'USER';
   const isConnected = apiService.isBackendConnected();
 
@@ -79,7 +81,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const userMap = new Map<string, AdminUserItem>();
 
     // 1. Add current user profile
-    if (currentProfile && currentProfile.id) {
+    if (currentProfile && currentProfile.id && currentProfile.id !== 'guest' && currentProfile.id !== '') {
+      const currentProvider = currentProfile.provider || (currentProfile.email?.includes('gmail') ? 'google' : currentProfile.email?.includes('github') ? 'github' : 'email');
       userMap.set(currentProfile.id, {
         id: currentProfile.id,
         username: currentProfile.username || 'current_user',
@@ -94,13 +97,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         joinedDate: new Date().toISOString().split('T')[0],
         status: 'ACTIVE',
         solvedQuestionsCount: 0,
+        provider: currentProvider,
       });
     }
 
-    // 2. Add local mock admin users
+    // 2. Add local saved users (which includes saved OAuth accounts!)
     localUsers.forEach(u => {
-      if (!userMap.has(u.id)) {
+      if (!u.id || u.id === 'guest' || u.id === '') return;
+      const existing = userMap.get(u.id);
+      if (!existing) {
         userMap.set(u.id, u);
+      } else {
+        userMap.set(u.id, {
+          ...u,
+          ...existing,
+          provider: (existing.provider && existing.provider !== 'email') ? existing.provider : (u.provider || existing.provider),
+          email: existing.email || u.email,
+        });
       }
     });
 
@@ -110,7 +123,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const dbUsers = await apiService.getUsersFromDatabase();
         if (dbUsers && dbUsers.length > 0) {
           dbUsers.forEach(u => {
-            userMap.set(u.id, u);
+            if (!u.id || u.id === 'guest' || u.id === '') return;
+            const existing = userMap.get(u.id);
+            if (existing) {
+              userMap.set(u.id, {
+                ...existing,
+                ...u,
+                fullName: (u.fullName && !u.fullName.includes('Học Viên Sanjion')) ? u.fullName : existing.fullName,
+                email: (u.email && !u.email.endsWith('@sanjion.dev')) ? u.email : (existing.email || u.email),
+                provider: (u.provider && u.provider !== 'email') ? u.provider : (existing.provider || u.provider),
+                username: (u.username && u.username !== 'user') ? u.username : existing.username,
+              });
+            } else {
+              userMap.set(u.id, u);
+            }
           });
         }
       } catch (err) {
@@ -152,44 +178,60 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
   }
 
-  const handleRoleChange = (userId: string, targetRole: UserRole) => {
+  const handleRoleChange = async (userId: string, targetRole: UserRole) => {
     const success = adminService.updateUserRole(userId, targetRole, currentUserRole);
     if (success) {
+      if (isConnected) {
+        await apiService.updateUserRoleInDatabase(userId, targetRole);
+      }
       if (userId === currentProfile.id && onProfileRoleChanged) {
         onProfileRoleChanged(targetRole);
       }
-      loadUsers();
+      await loadUsers();
     } else {
       alert('⚠️ Bạn không có đủ quyền để thay đổi vai trò của người dùng này!');
     }
   };
 
-  const handleToggleStatus = (userId: string) => {
+  const handleToggleStatus = async (userId: string) => {
+    const targetUser = usersList.find(u => u.id === userId);
+    const newStatus = targetUser?.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE';
     const success = adminService.toggleUserStatus(userId, currentUserRole);
     if (success) {
-      loadUsers();
+      if (isConnected) {
+        await apiService.updateUserStatusInDatabase(userId, newStatus);
+      }
+      await loadUsers();
     } else {
       alert('⚠️ Bạn không có đủ quyền thực hiện thao tác này!');
     }
   };
 
-  const handleConfirmDeleteUser = () => {
+  const handleConfirmDeleteUser = async () => {
     if (!userToDelete) return;
+    
+    // 1. Delete from local storage
     const success = adminService.deleteUser(userToDelete.id, currentUserRole);
+    
+    // 2. Delete from Supabase Database if connected
+    if (isConnected) {
+      await apiService.deleteUserFromDatabase(userToDelete.id);
+    }
+
     if (success) {
       setUserToDelete(null);
-      loadUsers();
+      await loadUsers();
     } else {
-      alert('⚠️ Chỉ duy nhất OWNER mới có quyền xóa người dùng khỏi hệ thống!');
+      alert('⚠️ Bạn không có đủ quyền xóa người dùng này khỏi hệ thống!');
       setUserToDelete(null);
     }
   };
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFullName.trim() || !newEmail.trim()) return;
 
-    adminService.addUser(
+    const createdUser = adminService.addUser(
       {
         fullName: newFullName,
         email: newEmail,
@@ -198,11 +240,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       currentUserRole
     );
 
+    if (isConnected && createdUser) {
+      await apiService.saveUserToDatabase(createdUser);
+    }
+
     setNewFullName('');
     setNewEmail('');
     setNewRole('USER');
     setIsAddUserModalOpen(false);
-    loadUsers();
+    await loadUsers();
   };
 
   // AI Configuration Handlers
@@ -237,17 +283,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Filtered users
   const filteredUsers = usersList.filter(u => {
     const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+    const isGoogle = u.provider === 'google' || u.email?.includes('gmail');
+    const isGithub = u.provider === 'github' || u.email?.includes('github');
+    const matchesProvider =
+      providerFilter === 'ALL' ||
+      (providerFilter === 'google' && isGoogle) ||
+      (providerFilter === 'github' && isGithub) ||
+      (providerFilter === 'email' && !isGoogle && !isGithub);
+
     const matchesSearch =
       u.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.username.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesRole && matchesSearch;
+
+    return matchesRole && matchesProvider && matchesSearch;
   });
 
-  // Role Counts
+  // Role & Provider Counts
   const ownerCount = usersList.filter(u => u.role === 'OWNER').length;
   const adminCount = usersList.filter(u => u.role === 'ADMIN').length;
   const userCount = usersList.filter(u => u.role === 'USER').length;
+  const googleCount = usersList.filter(u => u.provider === 'google' || u.email?.includes('gmail')).length;
+  const githubCount = usersList.filter(u => u.provider === 'github' || u.email?.includes('github')).length;
+  const emailCount = usersList.length - googleCount - githubCount;
 
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
@@ -412,34 +470,86 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Filter Bar & Search */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-pink-100 shadow-sm">
-            <div className="relative w-full sm:w-80">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm theo tên, email, username..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên, email, username..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
+
+              <button
+                onClick={loadUsers}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition-all cursor-pointer flex-shrink-0"
+                title="Tải lại danh sách người dùng"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
             </div>
 
-            <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
-              <span className="text-xs font-bold text-slate-500 flex items-center gap-1 mr-1">
-                <Filter className="w-3.5 h-3.5" /> Lọc Role:
-              </span>
-              {(['ALL', 'OWNER', 'ADMIN', 'USER'] as const).map(role => (
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <span className="text-xs font-bold text-slate-500 flex items-center gap-1 mr-1">
+                  <Filter className="w-3.5 h-3.5" /> Role:
+                </span>
+                {(['ALL', 'OWNER', 'ADMIN', 'USER'] as const).map(role => (
+                  <button
+                    key={role}
+                    onClick={() => setRoleFilter(role)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                      roleFilter === role
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {role}
+                  </button>
+                ))}
+              </div>
+
+              <div className="h-4 w-[1px] bg-slate-200 hidden md:block" />
+
+              <div className="flex items-center gap-1.5 overflow-x-auto">
+                <span className="text-xs font-bold text-slate-500 flex items-center gap-1 mr-1">
+                  🔐 Login:
+                </span>
                 <button
-                  key={role}
-                  onClick={() => setRoleFilter(role)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-                    roleFilter === role
-                      ? 'bg-slate-900 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  onClick={() => setProviderFilter('ALL')}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    providerFilter === 'ALL' ? 'bg-purple-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  {role}
+                  Tất cả ({usersList.length})
                 </button>
-              ))}
+                <button
+                  onClick={() => setProviderFilter('google')}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    providerFilter === 'google' ? 'bg-rose-600 text-white shadow-sm' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                  }`}
+                >
+                  🔴 Google ({googleCount})
+                </button>
+                <button
+                  onClick={() => setProviderFilter('github')}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    providerFilter === 'github' ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-800 hover:bg-slate-200 border border-slate-300'
+                  }`}
+                >
+                  🐙 GitHub ({githubCount})
+                </button>
+                <button
+                  onClick={() => setProviderFilter('email')}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                    providerFilter === 'email' ? 'bg-blue-600 text-white shadow-sm' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                  }`}
+                >
+                  ✉️ Email ({emailCount})
+                </button>
+              </div>
             </div>
           </div>
 
@@ -558,7 +668,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               {user.status === 'ACTIVE' ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                             </button>
 
-                            {currentUserRole === 'OWNER' && user.id !== currentProfile.id && (
+                            {(currentUserRole === 'OWNER' || (currentUserRole === 'ADMIN' && user.role === 'USER')) && user.id !== currentProfile.id && (
                               <button
                                 onClick={() => setUserToDelete(user)}
                                 className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white transition-all cursor-pointer"
@@ -831,8 +941,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* POPUP 1: CUSTOM DELETE CONFIRMATION MODAL */}
       {userToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl shadow-2xl border border-rose-200 max-w-md w-full p-6 space-y-5 animate-scaleUp">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl border border-rose-200 max-w-md w-full p-6 space-y-5 my-auto max-h-[90vh] overflow-y-auto animate-scaleUp">
             <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
               <div className="p-3 bg-rose-100 text-rose-600 rounded-2xl">
                 <AlertCircle className="w-6 h-6" />
@@ -884,8 +994,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* POPUP 2: CREATE NEW USER MODAL */}
       {isAddUserModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-md w-full p-6 space-y-5">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl border border-pink-100 max-w-md w-full p-6 space-y-5 my-auto max-h-[90vh] overflow-y-auto animate-scaleUp">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
                 <Plus className="w-5 h-5 text-pink-600" /> Thêm Người Dùng Mới

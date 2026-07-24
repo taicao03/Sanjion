@@ -101,8 +101,8 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md animate-fadeIn">
-        <div className="bg-white border border-pink-200/80 rounded-3xl max-w-lg w-full p-5 sm:p-7 shadow-2xl relative overflow-visible max-h-[92vh] flex flex-col">
+      <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-6 animate-fadeIn">
+        <div className="bg-white border border-pink-200/90 rounded-3xl max-w-lg w-full p-5 sm:p-7 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto animate-scaleUp flex flex-col">
           {/* Top Decorative Glow */}
           <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 bg-gradient-to-tr from-pink-500/20 to-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
 

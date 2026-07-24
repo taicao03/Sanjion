@@ -36,7 +36,11 @@ CREATE TABLE IF NOT EXISTS questions (
 CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY,
     full_name VARCHAR(255),
+    username VARCHAR(255),
+    email VARCHAR(255),
     avatar_url TEXT,
+    role VARCHAR(50) DEFAULT 'USER',
+    provider VARCHAR(50) DEFAULT 'email',
     streak_count INT DEFAULT 0,
     total_points INT DEFAULT 0,
     last_active_date DATE,

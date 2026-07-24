@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { storageService } from './storageService';
 import { MOCK_CATEGORIES, MOCK_QUESTIONS } from './mockData';
-import { Question, Category, UserProgress } from '../types';
+import { Question, Category, UserProgress, UserProfile } from '../types';
 
 const AI_QUESTIONS_KEY = 'fe_sanjion_v2_ai_questions';
 
@@ -54,25 +54,116 @@ export const apiService = {
 
       if (!data) return [];
 
-      return data.map((p: any) => ({
-        id: p.id,
-        username: p.username || p.email?.split('@')[0] || 'user',
-        fullName: p.full_name || p.fullName || p.name || 'Học Viên Sanjion',
-        avatarUrl: p.avatar_url || p.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=sanjion',
-        streakCount: p.streak_count || p.streakCount || 0,
-        lastActiveDate: p.last_active_date || new Date().toISOString().split('T')[0],
-        targetLevel: p.target_level || 'Junior',
-        totalPoints: p.total_points || p.totalPoints || 0,
-        role: p.role || 'USER',
-        email: p.email || `${p.username || 'user'}@sanjion.dev`,
-        joinedDate: p.created_at ? p.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-        status: p.status || 'ACTIVE',
-        solvedQuestionsCount: p.solved_count || 0,
-        provider: p.provider || (p.email?.includes('gmail') ? 'google' : p.email?.includes('github') ? 'github' : 'email'),
-      }));
+      return data.map((p: any) => {
+        const rawAvatar = p.avatar_url || p.avatarUrl || '';
+        const rawName = p.full_name || p.fullName || p.name || '';
+        const rawEmail = p.email || '';
+        
+        let inferredProvider = p.provider;
+        if (!inferredProvider) {
+          if (rawEmail.includes('gmail') || rawAvatar.includes('google') || rawAvatar.includes('lh3.googleusercontent.com')) {
+            inferredProvider = 'google';
+          } else if (rawEmail.includes('github') || rawAvatar.includes('github') || rawAvatar.includes('avatars.githubusercontent.com')) {
+            inferredProvider = 'github';
+          } else {
+            inferredProvider = 'email';
+          }
+        }
+
+        const fallbackEmail = p.email || (p.username ? `${p.username}@gmail.com` : `user_${p.id.slice(0, 6)}@gmail.com`);
+
+        return {
+          id: p.id,
+          username: p.username || p.email?.split('@')[0] || `dev_${p.id.slice(0, 5)}`,
+          fullName: rawName || 'Học Viên Sanjion',
+          avatarUrl: rawAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
+          streakCount: p.streak_count || p.streakCount || 0,
+          lastActiveDate: p.last_active_date || new Date().toISOString().split('T')[0],
+          targetLevel: p.target_level || 'Junior',
+          totalPoints: p.total_points || p.totalPoints || 0,
+          role: p.role || 'USER',
+          email: fallbackEmail,
+          joinedDate: p.created_at ? p.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+          status: p.status || 'ACTIVE',
+          solvedQuestionsCount: p.solved_count || 0,
+          provider: inferredProvider,
+        };
+      });
     } catch (err) {
       console.warn('Failed to fetch real DB users:', err);
       return [];
+    }
+  },
+
+  // Save / Upsert user profile to Supabase Database
+  async saveUserToDatabase(profile: Partial<UserProfile> & { id: string }): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+    try {
+      const provider = profile.provider || (profile.email?.includes('gmail') ? 'google' : profile.email?.includes('github') ? 'github' : 'email');
+      
+      const payload: any = {
+        id: profile.id,
+        full_name: profile.fullName || 'Học Viên Sanjion',
+        username: profile.username || profile.email?.split('@')[0] || 'user',
+        email: profile.email,
+        avatar_url: profile.avatarUrl,
+        role: profile.role || 'USER',
+        provider: provider,
+        streak_count: profile.streakCount || 0,
+        total_points: profile.totalPoints || 0,
+        last_active_date: profile.lastActiveDate || new Date().toISOString().split('T')[0],
+      };
+
+      const { error } = await supabase.from('user_profiles').upsert(payload);
+      if (error) {
+        await supabase.from('user_profiles').upsert({
+          id: profile.id,
+          full_name: profile.fullName || 'Học Viên Sanjion',
+          avatar_url: profile.avatarUrl,
+          streak_count: profile.streakCount || 0,
+          total_points: profile.totalPoints || 0,
+          last_active_date: profile.lastActiveDate || new Date().toISOString().split('T')[0],
+        });
+      }
+      return true;
+    } catch (err) {
+      console.warn('Failed to save user to DB:', err);
+      return false;
+    }
+  },
+
+  // Delete User from Supabase Database
+  async deleteUserFromDatabase(userId: string): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+    try {
+      await supabase.from('user_profiles').delete().eq('id', userId);
+      await supabase.from('profiles').delete().eq('id', userId);
+      return true;
+    } catch (err) {
+      console.warn('Failed to delete user from DB:', err);
+      return false;
+    }
+  },
+
+  // Update User Role in Supabase Database
+  async updateUserRoleInDatabase(userId: string, role: string): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+    try {
+      await supabase.from('user_profiles').update({ role }).eq('id', userId);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  // Update User Status in Supabase Database
+  async updateUserStatusInDatabase(userId: string, status: string): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+    try {
+      await supabase.from('user_profiles').update({ status }).eq('id', userId);
+      return true;
+    } catch (err) {
+      return false;
     }
   },
 
@@ -261,33 +352,40 @@ export const apiService = {
     userAnswer?: string,
     questionSlug?: string
   ): Promise<UserProgress> {
-    const updatedProgress = storageService.saveProgress(questionId, status, scoreEarned, userAnswer, questionSlug);
+    const updatedProgress = storageService.saveProgress(questionId, status, scoreEarned, userAnswer, questionSlug, userId);
     const updatedProfile = storageService.getProfile();
 
-    if (isSupabaseConfigured && supabase) {
+    if (isSupabaseConfigured && supabase && userId) {
       try {
         console.log('🟢 [API Mode]: Đang lưu tiến độ & điểm số mới lên Supabase Cloud -> user_progress');
-        await supabase.from('user_progress').upsert({
-          user_id: userId,
-          question_id: questionId,
-          status,
-          score: updatedProgress.score,
-          user_answer: userAnswer,
-          solved_at: status === 'SOLVED' ? new Date().toISOString() : null,
-          last_attempt_at: new Date().toISOString(),
-        });
+        
+        const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(questionId);
 
-        // Update profile points on Supabase DB
-        if (userId) {
-          await supabase.from('user_profiles').upsert({
-            id: userId,
-            full_name: updatedProfile.fullName,
-            avatar_url: updatedProfile.avatarUrl,
-            streak_count: updatedProfile.streakCount,
-            total_points: updatedProfile.totalPoints,
-            last_active_date: updatedProfile.lastActiveDate,
+        if (isUuid) {
+          await supabase.from('user_progress').upsert({
+            user_id: userId,
+            question_id: questionId,
+            status,
+            score: updatedProgress.score,
+            user_answer: userAnswer,
+            solved_at: status === 'SOLVED' ? new Date().toISOString() : null,
+            last_attempt_at: new Date().toISOString(),
           });
         }
+
+        // Update profile points, streak & metadata on Supabase DB
+        await supabase.from('user_profiles').upsert({
+          id: userId,
+          full_name: updatedProfile.fullName,
+          email: updatedProfile.email,
+          username: updatedProfile.username,
+          avatar_url: updatedProfile.avatarUrl,
+          streak_count: updatedProfile.streakCount,
+          total_points: updatedProfile.totalPoints,
+          last_active_date: updatedProfile.lastActiveDate,
+          role: updatedProfile.role || 'USER',
+          provider: updatedProfile.provider || 'email',
+        });
       } catch (err) {
         console.error('Failed to sync progress to Supabase:', err);
       }
