@@ -169,5 +169,48 @@ export const storageService = {
 
   clearAllData() {
     localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
+  },
+
+  // --- Complete User Purge (Wipes out all progress, points, streak, and history) ---
+  purgeAllUserData(userId: string, username?: string, email?: string): void {
+    try {
+      const identifiers = [userId, username, email].filter(Boolean) as string[];
+
+      // 1. Purge specific key patterns
+      identifiers.forEach((id) => {
+        localStorage.removeItem(`fe_sanjion_v2_progress_${id}`);
+        localStorage.removeItem(`fe_sanjion_v2_bookmarks_${id}`);
+        localStorage.removeItem(`fe_sanjion_v2_activity_${id}`);
+      });
+
+      // 2. Scan all localStorage keys to clean any keys containing the user identifier
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+          identifiers.forEach((id) => {
+            if (id && key.includes(id)) {
+              keysToRemove.push(key);
+            }
+          });
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+
+      // 3. Reset profile if current active profile matches deleted user
+      const currentProf = this.getProfile();
+      if (
+        currentProf.id === userId ||
+        (username && currentProf.username === username) ||
+        (email && currentProf.email === email)
+      ) {
+        localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
+        localStorage.removeItem(STORAGE_KEYS.USER_PROGRESS);
+        localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
+        localStorage.removeItem(STORAGE_KEYS.DAILY_ACTIVITY);
+      }
+    } catch (e) {
+      console.warn('Failed to purge user data:', e);
+    }
   }
 };

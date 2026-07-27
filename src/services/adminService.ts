@@ -1,4 +1,5 @@
 import { UserProfile, UserRole } from '../types';
+import { storageService } from './storageService';
 
 export interface AdminUserItem extends UserProfile {
   joinedDate: string;
@@ -150,24 +151,17 @@ export const adminService = {
     const target = users.find(u => u.id === userId);
     if (!target) return false;
 
-    // OWNER can delete all roles
-    if (operatorRole === 'OWNER') {
-      const filtered = users.filter(u => u.id !== userId);
-      this.saveUsers(filtered);
-      return true;
-    }
-
     // ADMIN can ONLY delete USER role (cannot delete ADMIN or OWNER)
-    if (operatorRole === 'ADMIN') {
-      if (target.role !== 'USER') {
-        return false;
-      }
-      const filtered = users.filter(u => u.id !== userId);
-      this.saveUsers(filtered);
-      return true;
+    if (operatorRole === 'ADMIN' && target.role !== 'USER') {
+      return false;
     }
 
-    return false;
+    // ✨ PURGE ALL USER DATA (Progress, Points, Bookmarks, Activity) ✨
+    storageService.purgeAllUserData(target.id, target.username, target.email);
+
+    const filtered = users.filter(u => u.id !== userId);
+    this.saveUsers(filtered);
+    return true;
   },
 
   isUserBlocked(identifier: string): boolean {
