@@ -29,39 +29,39 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onOpenGenerateModal,
 }) => {
   return (
-    <div className="bg-white/80 border border-pink-100/90 rounded-3xl p-4 sm:p-5 mb-6 backdrop-blur-md shadow-sm space-y-4">
+    <div className="bg-[#161B22] border border-white/[0.06] rounded-lg p-4 font-mono mb-6 space-y-4">
       {/* Top Search & Controls Row */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Search Input Box */}
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-pink-500" />
+        {/* Terminal Command Input Box */}
+        <div className="relative w-full md:w-96">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8B94A3]" />
           <input
             type="text"
-            placeholder="Tìm bài tập Sanjion, từ khóa, kỹ năng..."
+            placeholder='grep --topic "..."'
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-rose-50/50 border border-pink-200/80 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-pink-400/70 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all font-bold"
+            className="w-full bg-[#0B0D11] border border-white/[0.06] rounded pl-10 pr-4 py-2 text-xs text-[#EDEFF2] placeholder-[#8B94A3]/60 focus:outline-none focus:border-[#C9962C]/50 transition-colors font-mono"
           />
         </div>
 
         {/* AI Generate Button & Status Filter Options */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end">
+        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
           <button
             onClick={onOpenGenerateModal}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:from-purple-700 hover:to-amber-600 text-white text-xs font-black shadow-md shadow-purple-500/20 transition-all cursor-pointer transform hover:scale-[1.02]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#5B54D9] text-[#5B54D9] bg-[#5B54D9]/10 hover:bg-[#5B54D9]/20 text-xs font-bold transition-colors cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+            <Sparkles className="w-3.5 h-3.5 text-[#5B54D9]" />
             <span>Sinh Bài Bằng AI</span>
           </button>
 
-          {/* Status Option Tabs */}
-          <div className="flex items-center gap-1 bg-rose-50/80 p-1 rounded-2xl border border-pink-100 shadow-inner">
+          {/* Status Underline Tabs */}
+          <div className="flex items-center gap-1 border-b border-white/[0.06] pb-0.5">
             <button
               onClick={() => onSelectStatus('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              className={`px-3 py-1 text-xs font-bold transition-colors cursor-pointer ${
                 selectedStatus === 'ALL'
-                  ? 'bg-white text-pink-600 shadow-sm scale-[1.02]'
-                  : 'text-slate-500 hover:text-pink-600'
+                  ? 'text-[#EDEFF2] border-b-2 border-[#C9962C]'
+                  : 'text-[#8B94A3] hover:text-[#EDEFF2]'
               }`}
             >
               Tất cả
@@ -69,10 +69,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
             <button
               onClick={() => onSelectStatus('SOLVED')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-3 py-1 text-xs font-bold transition-colors cursor-pointer ${
                 selectedStatus === 'SOLVED'
-                  ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 scale-[1.02]'
-                  : 'text-slate-500 hover:text-emerald-600'
+                  ? 'text-[#2FAE79] border-b-2 border-[#2FAE79]'
+                  : 'text-[#8B94A3] hover:text-[#2FAE79]'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -81,10 +81,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
             <button
               onClick={() => onSelectStatus('UNSOLVED')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-3 py-1 text-xs font-bold transition-colors cursor-pointer ${
                 selectedStatus === 'UNSOLVED'
-                  ? 'bg-slate-800 text-white shadow-sm scale-[1.02]'
-                  : 'text-slate-500 hover:text-slate-800'
+                  ? 'text-[#EDEFF2] border-b-2 border-white/40'
+                  : 'text-[#8B94A3] hover:text-[#EDEFF2]'
               }`}
             >
               <Circle className="w-3.5 h-3.5" />
@@ -94,17 +94,17 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         </div>
       </div>
 
-      {/* Category Selection Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-t border-pink-100/70 pt-3">
+      {/* Category Selection Tag Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none border-t border-white/[0.04] pt-3">
         <button
           onClick={() => onSelectCategory('ALL')}
-          className={`px-4 py-2 rounded-2xl text-xs font-black flex-shrink-0 transition-all cursor-pointer ${
+          className={`px-3 py-1 rounded text-xs font-bold flex-shrink-0 transition-colors cursor-pointer border ${
             selectedCategory === 'ALL'
-              ? 'bg-gradient-to-r from-pink-500 via-purple-600 to-amber-500 text-white shadow-md shadow-pink-500/25 scale-[1.02]'
-              : 'bg-white text-slate-600 hover:text-pink-600 hover:bg-rose-50 border border-pink-100/90 shadow-sm'
+              ? 'bg-[#C9962C]/20 border-[#C9962C] text-[#C9962C]'
+              : 'bg-[#0B0D11] border-white/[0.06] text-[#8B94A3] hover:text-[#EDEFF2]'
           }`}
         >
-          🌐 Tất Cả Chủ Đề Roadmap.sh
+          🌐 Tất Cả Chủ Đề
         </button>
 
         {categories.map((cat) => {
@@ -113,15 +113,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <button
               key={cat.id}
               onClick={() => onSelectCategory(cat.id)}
-              className={`px-3.5 py-2 rounded-2xl text-xs font-extrabold flex-shrink-0 transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-2.5 py-1 rounded text-xs font-bold flex-shrink-0 transition-colors cursor-pointer flex items-center gap-1.5 border ${
                 isSelected
-                  ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-purple-500/20 scale-[1.02]'
-                  : 'bg-white text-slate-600 hover:text-pink-600 hover:bg-rose-50 border border-pink-100/90 shadow-sm'
+                  ? 'bg-[#5B54D9]/20 border-[#5B54D9] text-[#EDEFF2]'
+                  : 'bg-[#0B0D11] border-white/[0.06] text-[#8B94A3] hover:text-[#EDEFF2]'
               }`}
             >
-              <div className="w-5 h-5 rounded-lg bg-white p-0.5 flex items-center justify-center shadow-sm flex-shrink-0 border border-pink-100">
-                <CategoryIcon slug={cat.slug} name={cat.name} className="w-4 h-4" />
-              </div>
+              <CategoryIcon slug={cat.slug} name={cat.name} className="w-3.5 h-3.5 text-[#8B94A3]" />
               <span>{cat.name}</span>
             </button>
           );
@@ -130,26 +128,26 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       {/* Difficulty Level Pills */}
       <div className="flex items-center gap-2 pt-1 flex-wrap">
-        <span className="text-xs text-slate-500 font-extrabold mr-1 flex items-center gap-1 uppercase tracking-wider">
-          <Filter className="w-3.5 h-3.5 text-pink-500" />
+        <span className="text-xs text-[#8B94A3] font-bold mr-1 flex items-center gap-1 uppercase tracking-wider">
+          <Filter className="w-3.5 h-3.5 text-[#C9962C]" />
           Độ khó:
         </span>
         {[
-          { id: 'ALL', label: 'Tất cả', style: 'bg-slate-700 text-white shadow-sm' },
-          { id: 'EASY', label: 'Dễ (Easy)', style: 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/30' },
-          { id: 'MEDIUM', label: 'Trung Bình', style: 'bg-amber-500 text-white shadow-sm shadow-amber-500/30' },
-          { id: 'HARD', label: 'Khó (Senior)', style: 'bg-rose-600 text-white shadow-sm shadow-rose-500/30' },
-          { id: 'EXPERT', label: 'Cực Khó', style: 'bg-purple-700 text-white shadow-sm shadow-purple-500/30' },
+          { id: 'ALL', label: 'Tất cả', active: 'border-[#EDEFF2] text-[#EDEFF2] bg-white/[0.05]' },
+          { id: 'EASY', label: 'Dễ (Easy)', active: 'border-[#2FAE79] text-[#2FAE79] bg-[#2FAE79]/10' },
+          { id: 'MEDIUM', label: 'Trung Bình', active: 'border-[#C9962C] text-[#C9962C] bg-[#C9962C]/10' },
+          { id: 'HARD', label: 'Khó (Senior)', active: 'border-[#C1553B] text-[#C1553B] bg-[#C1553B]/10' },
+          { id: 'EXPERT', label: 'Cực Khó (System)', active: 'border-[#5B54D9] text-[#5B54D9] bg-[#5B54D9]/10' },
         ].map((item) => {
           const isSelected = selectedDifficulty === item.id;
           return (
             <button
               key={item.id}
               onClick={() => onSelectDifficulty(item.id)}
-              className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded text-[11px] font-bold transition-colors cursor-pointer border ${
                 isSelected
-                  ? `${item.style} scale-105`
-                  : 'bg-white text-slate-600 hover:bg-purple-50 hover:text-purple-700 border border-pink-100 shadow-sm'
+                  ? item.active
+                  : 'border-white/[0.06] text-[#8B94A3] bg-[#0B0D11] hover:text-[#EDEFF2]'
               }`}
             >
               {item.label}

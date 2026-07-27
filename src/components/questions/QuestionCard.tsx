@@ -20,26 +20,36 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   const getDifficultyBadge = (diff: string) => {
     switch (diff) {
       case 'EASY':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">Dễ</span>;
+        return <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#2FAE79]/10 text-[#2FAE79] border border-[#2FAE79]/30">Easy</span>;
       case 'MEDIUM':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">Trung Bình</span>;
+        return <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#C9962C]/10 text-[#C9962C] border border-[#C9962C]/30">Medium</span>;
       case 'HARD':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-100 text-pink-700 border border-pink-200">Khó</span>;
+        return <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#C1553B]/10 text-[#C1553B] border border-[#C1553B]/30">Hard</span>;
       case 'EXPERT':
-        return <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">Cực Khó</span>;
+        return <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#5B54D9]/10 text-[#5B54D9] border border-[#5B54D9]/30">Expert</span>;
       default:
         return null;
+    }
+  };
+
+  const getHoverBorderClass = (diff: string) => {
+    switch (diff) {
+      case 'EASY': return 'hover:border-[#2FAE79]/60';
+      case 'MEDIUM': return 'hover:border-[#C9962C]/60';
+      case 'HARD': return 'hover:border-[#C1553B]/60';
+      case 'EXPERT': return 'hover:border-[#5B54D9]/60';
+      default: return 'hover:border-white/20';
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'CODING_PRACTICE':
-        return <span title="Thực hành Coding"><Code2 className="w-4 h-4 text-pink-500" /></span>;
+        return <span title="Thực hành Coding"><Code2 className="w-3.5 h-3.5 text-[#2FAE79]" /></span>;
       case 'MULTIPLE_CHOICE':
-        return <span title="Trắc nghiệm Sanjion"><HelpCircle className="w-4 h-4 text-purple-500" /></span>;
+        return <span title="Trắc nghiệm"><HelpCircle className="w-3.5 h-3.5 text-[#5B54D9]" /></span>;
       case 'THEORY':
-        return <span title="Lý thuyết Sanjion"><FileText className="w-4 h-4 text-amber-500" /></span>;
+        return <span title="Lý thuyết"><FileText className="w-3.5 h-3.5 text-[#C9962C]" /></span>;
       default:
         return null;
     }
@@ -50,19 +60,19 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   return (
     <div
       onClick={() => onSelect(question)}
-      className="group relative bg-white/90 hover:bg-white border border-pink-100 hover:border-pink-300 rounded-2xl p-5 transition-all duration-200 cursor-pointer shadow-md hover:shadow-pink-500/10 flex flex-col justify-between"
+      className={`group relative bg-[#161B22] border border-white/[0.06] ${getHoverBorderClass(question.difficulty)} rounded-lg p-4 transition-colors duration-150 cursor-pointer flex flex-col justify-between font-mono`}
     >
       <div>
         {/* Header row */}
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2">
             {isSolved ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-[#2FAE79] flex-shrink-0" />
             ) : (
-              <Circle className="w-5 h-5 text-slate-300 flex-shrink-0" />
+              <Circle className="w-4 h-4 text-[#232A35] flex-shrink-0" />
             )}
             {getDifficultyBadge(question.difficulty)}
-            <div className="flex items-center gap-1 text-xs text-slate-500 bg-rose-50 px-2 py-0.5 rounded-lg border border-pink-100 font-medium">
+            <div className="flex items-center gap-1 text-[11px] text-[#8B94A3] bg-[#0B0D11] px-2 py-0.5 rounded border border-white/[0.04]">
               {getTypeIcon(question.type)}
               <span className="capitalize">{question.type.toLowerCase().replace('_', ' ')}</span>
             </div>
@@ -70,27 +80,27 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
           <button
             onClick={(e) => onToggleBookmark(e, question.id)}
-            className={`p-1.5 rounded-xl transition-colors ${
+            className={`p-1 rounded transition-colors ${
               isBookmarked
-                ? 'text-pink-600 bg-pink-100 hover:bg-pink-200'
-                : 'text-slate-400 hover:text-pink-600 hover:bg-pink-50'
+                ? 'text-[#C9962C] bg-[#C9962C]/10'
+                : 'text-[#8B94A3] hover:text-[#EDEFF2] hover:bg-white/[0.04]'
             }`}
-            title={isBookmarked ? 'Bỏ lưu câu hỏi Sanjion' : 'Lưu câu hỏi Sanjion'}
+            title={isBookmarked ? 'Bỏ lưu câu hỏi' : 'Lưu câu hỏi'}
           >
-            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-pink-500' : ''}`} />
+            <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-[#C9962C]' : ''}`} />
           </button>
         </div>
 
         {/* Title */}
-        <h3 className="text-base font-bold text-slate-800 group-hover:text-pink-600 transition-colors line-clamp-2 mb-2">
+        <h3 className="text-sm font-sans font-bold text-[#EDEFF2] group-hover:text-[#C9962C] transition-colors line-clamp-2 mb-2">
           {question.title}
         </h3>
 
         {/* Tags */}
         {question.tags && question.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-4">
+          <div className="flex flex-wrap gap-1 mb-3">
             {question.tags.map((tag) => (
-              <span key={tag} className="text-[11px] px-2.5 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-100 font-medium">
+              <span key={tag} className="text-[10px] px-2 py-0.5 rounded bg-[#0B0D11] text-[#8B94A3] border border-white/[0.04]">
                 #{tag}
               </span>
             ))}
@@ -99,15 +109,15 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       </div>
 
       {/* Footer info */}
-      <div className="pt-3 border-t border-pink-100 flex items-center justify-between text-xs text-slate-500">
-        <div className="flex items-center gap-1.5 text-amber-600 font-bold">
-          <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-          <span>+{question.points} pts</span>
+      <div className="pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-xs text-[#8B94A3]">
+        <div className="flex items-center gap-1 text-[#C9962C] font-bold">
+          <Star className="w-3.5 h-3.5 text-[#C9962C]" />
+          <span>+{question.points} XP</span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Clock className="w-3.5 h-3.5" />
-          <span>{question.viewCount} lượt xem</span>
+        <div className="flex items-center gap-1 text-[11px]">
+          <Clock className="w-3 h-3 text-[#8B94A3]" />
+          <span>{question.viewCount} views</span>
         </div>
       </div>
     </div>

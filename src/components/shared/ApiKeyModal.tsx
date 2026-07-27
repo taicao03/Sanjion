@@ -54,48 +54,48 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn">
-      <div className="bg-white border border-pink-200/90 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto animate-scaleUp">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0B0D11]/90 flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn font-mono">
+      <div className="bg-[#161B22] border border-white/[0.06] rounded-lg max-w-md w-full p-6 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 p-2 text-slate-400 hover:text-pink-600 rounded-xl hover:bg-pink-50 transition-colors"
+          className="absolute right-4 top-4 p-1.5 text-[#8B94A3] hover:text-[#EDEFF2] rounded hover:bg-white/[0.04] transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="text-center py-2 space-y-3">
-          <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-purple-500 to-pink-500 border border-purple-200 flex items-center justify-center text-white mx-auto shadow-md">
-            <Sparkles className="w-7 h-7" />
+          <div className="w-12 h-12 rounded bg-[#0B0D11] border border-white/[0.06] flex items-center justify-center text-[#5B54D9] mx-auto">
+            <Sparkles className="w-6 h-6 text-[#5B54D9]" />
           </div>
 
-          <h3 className="text-xl font-black text-slate-800 tracking-tight">Cấu Hình AI Engine Keys</h3>
-          <p className="text-xs text-slate-600 leading-relaxed font-medium">
-            Kiểm tra trạng thái Quota trực tiếp hoặc cập nhật API Keys mới.
+          <h3 className="text-lg font-display font-medium text-[#EDEFF2]">Cấu Hình AI Engine Keys</h3>
+          <p className="text-xs text-[#8B94A3] leading-relaxed">
+            Nhập Gemini / OpenAI API Keys cho tính năng Sanjioner AI.
           </p>
 
           <div className="text-left space-y-3 mt-4">
             {/* Gemini Key Input */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-slate-700">1. Google Gemini API Key (Miễn phí):</label>
+                <label className="text-xs text-[#EDEFF2]">1. Google Gemini API Key:</label>
                 <a
                   href="https://aistudio.google.com/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[11px] text-purple-600 hover:underline font-extrabold flex items-center gap-0.5"
+                  className="text-[11px] text-[#5B54D9] hover:underline flex items-center gap-0.5"
                 >
                   <span>Lấy Key Gemini</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
               <div className="relative">
-                <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-pink-400" />
+                <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8B94A3]" />
                 <input
                   type="password"
-                  placeholder="Dán Gemini Keys (phân cách bởi dấu phẩy)..."
+                  placeholder="Dán Gemini Key..."
                   value={geminiKey}
                   onChange={(e) => setGeminiKey(e.target.value)}
-                  className="w-full bg-rose-50/50 border border-pink-200 rounded-2xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-pink-300 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 font-mono"
+                  className="w-full bg-[#0B0D11] border border-white/[0.06] rounded pl-9 pr-4 py-2 text-xs text-[#EDEFF2] placeholder-[#8B94A3]/50 focus:outline-none focus:border-[#5B54D9] font-mono"
                 />
               </div>
             </div>
@@ -103,28 +103,28 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
             {/* OpenAI / ChatGPT Key Input */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
-                  <Bot className="w-3.5 h-3.5 text-emerald-600" />
+                <label className="text-xs text-[#EDEFF2] flex items-center gap-1">
+                  <Bot className="w-3.5 h-3.5 text-[#2FAE79]" />
                   2. ChatGPT OpenAI API Key (sk-...):
                 </label>
                 <a
                   href="https://platform.openai.com/api-keys"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[11px] text-emerald-600 hover:underline font-extrabold flex items-center gap-0.5"
+                  className="text-[11px] text-[#2FAE79] hover:underline flex items-center gap-0.5"
                 >
                   <span>Lấy Key ChatGPT</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
               <div className="relative">
-                <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
+                <Key className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#2FAE79]" />
                 <input
                   type="password"
-                  placeholder="Dán ChatGPT OpenAI Key (sk-...)"
+                  placeholder="Dán ChatGPT Key (sk-...)"
                   value={openAIKey}
                   onChange={(e) => setOpenAIKey(e.target.value)}
-                  className="w-full bg-emerald-50/40 border border-emerald-200 rounded-2xl pl-9 pr-4 py-2 text-xs text-slate-800 placeholder-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 font-mono"
+                  className="w-full bg-[#0B0D11] border border-white/[0.06] rounded pl-9 pr-4 py-2 text-xs text-[#EDEFF2] placeholder-[#8B94A3]/50 focus:outline-none focus:border-[#2FAE79] font-mono"
                 />
               </div>
             </div>
@@ -135,20 +135,20 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
                 type="button"
                 onClick={handleTestKeys}
                 disabled={isTesting || !geminiKey}
-                className="w-full py-2 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full py-2 rounded bg-[#0B0D11] hover:bg-white/[0.04] border border-white/[0.06] text-[#5B54D9] text-xs font-mono flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
               >
-                {isTesting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-purple-600" />}
-                <span>🔍 Kiểm Tra Quota API Keys Trực Tiếp</span>
+                {isTesting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-[#5B54D9]" />}
+                <span>🔍 Kiểm Tra API Key Status</span>
               </button>
 
               {testResults && (
-                <div className="mt-2 space-y-1 bg-slate-900 text-white p-3 rounded-2xl text-[11px] font-mono leading-relaxed">
+                <div className="mt-2 space-y-1 bg-[#0B0D11] text-[#EDEFF2] p-3 rounded border border-white/[0.06] text-[11px] font-mono leading-relaxed">
                   {testResults.map((res, idx) => (
                     <div key={idx} className="flex items-center gap-1.5">
                       {res.status === 'ok' ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#2FAE79] flex-shrink-0" />
                       ) : (
-                        <XCircle className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
+                        <XCircle className="w-3.5 h-3.5 text-[#C1553B] flex-shrink-0" />
                       )}
                       <span>{res.msg}</span>
                     </div>
@@ -161,10 +161,10 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
 
           <button
             onClick={handleSave}
-            className="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-amber-500 hover:from-purple-700 hover:to-amber-600 text-white font-extrabold text-xs shadow-md shadow-purple-500/20 transition-all flex items-center justify-center gap-2 mt-4 cursor-pointer"
+            className="w-full py-2.5 rounded border border-[#C9962C] text-[#C9962C] bg-[#C9962C]/10 hover:bg-[#C9962C]/20 font-bold text-xs transition-colors flex items-center justify-center gap-2 mt-4 cursor-pointer"
           >
-            {isSaved ? <Check className="w-4 h-4" /> : <Sparkles className="w-4 h-4 text-amber-300" />}
-            {isSaved ? 'Đã Lưu API Keys Thành Công!' : 'Lưu API Keys & Kích Hoạt AI Engine'}
+            {isSaved ? <Check className="w-4 h-4 text-[#2FAE79]" /> : <Sparkles className="w-4 h-4 text-[#C9962C]" />}
+            {isSaved ? 'Đã Lưu Key Thành Công!' : 'Lưu Cấu Hình Key'}
           </button>
         </div>
       </div>

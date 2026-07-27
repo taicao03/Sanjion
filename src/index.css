@@ -4,14 +4,14 @@
 
 @layer base {
   body {
-    @apply bg-gradient-to-br from-rose-50 via-purple-50/50 to-amber-50/50 text-slate-800 font-sans antialiased;
+    @apply bg-[#0B0D11] text-[#EDEFF2] font-sans antialiased;
   }
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -19,27 +19,42 @@
   }
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-/* Custom scrollbar styling for Pink-Purple-Gold theme */
+.animate-fadeIn {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-cursor-blink {
+  animation: cursorBlink 1.2s infinite;
+}
+
+/* Noir Editor hairline card utility */
+.noir-card {
+  background-color: #161B22;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Custom scrollbar styling for Editor Noir dark theme */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #fdf2f8;
+  background: #0B0D11;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #f472b6;
-  border-radius: 9999px;
+  background: #232A35;
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #ec4899;
+  background: #8B94A3;
 }
 
 /* Hide scrollbar helpers */

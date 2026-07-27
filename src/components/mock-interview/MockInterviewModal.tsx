@@ -42,14 +42,20 @@ export const MockInterviewModal: React.FC<MockInterviewModalProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const getTimeColorClass = (seconds: number) => {
+    if (seconds <= 60) return 'text-[#C1553B] border-[#C1553B]/50 bg-[#C1553B]/10 animate-pulse';
+    if (seconds <= 300) return 'text-[#C9962C] border-[#C9962C]/50 bg-[#C9962C]/10';
+    return 'text-[#EDEFF2] border-white/[0.06] bg-[#0B0D11]';
+  };
+
   return (
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn">
-      <div className="bg-white border border-pink-200/90 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto animate-scaleUp">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0B0D11]/90 flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn font-mono">
+      <div className="bg-[#161B22] border border-white/[0.06] rounded-lg max-w-xl w-full p-6 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto">
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 p-2 text-slate-400 hover:text-pink-600 rounded-xl hover:bg-pink-50 transition-colors"
+          className="absolute right-4 top-4 p-1.5 text-[#8B94A3] hover:text-[#EDEFF2] rounded hover:bg-white/[0.04] transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -57,51 +63,51 @@ export const MockInterviewModal: React.FC<MockInterviewModalProps> = ({
         {!sessionStarted ? (
           /* Start Screen */
           <div className="text-center py-4 space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-500 mx-auto shadow-sm">
-              <Zap className="w-8 h-8 fill-amber-500 animate-pulse" />
+            <div className="w-14 h-14 rounded bg-[#0B0D11] border border-white/[0.06] flex items-center justify-center text-[#C9962C] mx-auto">
+              <Zap className="w-7 h-7 text-[#C9962C]" />
             </div>
 
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Chế Độ Giả Lập Sanjion (Mock Sanjion)</h3>
-            <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed font-medium">
-              Thử thách bản thân dưới áp lực thời gian thực! Bạn sẽ có **45 phút** để hoàn thành bộ **5 câu hỏi Sanjion ngẫu nhiên** bao gồm cả Lý thuyết, Trắc nghiệm và Thực hành Coding.
+            <h3 className="text-xl font-display font-medium text-[#EDEFF2] tracking-tight">Chế Độ Thi Thử Sanjion 45'</h3>
+            <p className="text-xs text-[#8B94A3] max-w-md mx-auto leading-relaxed">
+              Thử thách bản thân dưới áp lực thời gian thực trong <b>45 phút</b> với bộ <b>5 câu hỏi Sanjion ngẫu nhiên</b>.
             </p>
 
-            <div className="bg-rose-50/60 p-4 rounded-2xl border border-pink-100 text-left space-y-2 text-xs text-slate-700 font-semibold">
+            <div className="bg-[#0B0D11] p-4 rounded border border-white/[0.04] text-left space-y-2 text-xs text-[#EDEFF2]">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-amber-500" />
-                <span>Thời lượng Sanjion: **45 phút**</span>
+                <Clock className="w-4 h-4 text-[#C9962C]" />
+                <span>Thời lượng: <b>45 phút</b></span>
               </div>
               <div className="flex items-center gap-2">
-                <Award className="w-4 h-4 text-purple-600" />
-                <span>Cấu trúc đề Sanjion: 2 câu Lý thuyết + 2 câu Trắc nghiệm + 1 câu Coding</span>
+                <Award className="w-4 h-4 text-[#5B54D9]" />
+                <span>Cấu trúc: 2 Lý thuyết + 2 Trắc nghiệm + 1 Coding</span>
               </div>
             </div>
 
             <button
               onClick={() => setSessionStarted(true)}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-pink-500 hover:from-amber-500 hover:to-pink-600 text-slate-900 font-extrabold text-sm shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 rounded border border-[#C9962C] text-[#C9962C] bg-[#C9962C]/10 hover:bg-[#C9962C]/20 font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Play className="w-4 h-4 fill-slate-900" />
-              Bắt Đầu Kỳ Sanjion Ngay
+              <Play className="w-4 h-4 text-[#C9962C]" />
+              Bắt Đầu Kỳ Thi Thử Ngay
             </button>
           </div>
         ) : (
           /* Active Session Screen */
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-pink-100 pb-3">
-              <span className="text-xs font-black text-pink-600 uppercase tracking-wider flex items-center gap-1.5">
-                <Heart className="w-4 h-4 fill-pink-500 text-pink-500" />
-                Phiên Sanjion Đang Diễn Ra
+            <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
+              <span className="text-xs font-bold text-[#C9962C] uppercase tracking-wider flex items-center gap-1.5">
+                <Heart className="w-4 h-4 text-[#C9962C]" />
+                Mock Interview In Progress
               </span>
-              <div className="flex items-center gap-2 bg-amber-100 px-3 py-1 rounded-xl border border-amber-200 text-amber-800 font-mono font-black text-sm">
-                <Clock className="w-4 h-4 text-amber-600" />
+              <div className={`flex items-center gap-2 px-3 py-1 rounded border font-mono font-bold text-sm ${getTimeColorClass(timeLeft)}`}>
+                <Clock className="w-4 h-4" />
                 <span>{formatTime(timeLeft)}</span>
               </div>
             </div>
 
-            <p className="text-xs text-slate-500 font-medium">Chọn câu hỏi bên dưới để vào màn hình làm bài Sanjion:</p>
+            <p className="text-xs text-[#8B94A3]">Chọn câu hỏi bên dưới để vào làm bài:</p>
 
-            <div className="space-y-2.5 max-h-64 overflow-y-auto">
+            <div className="space-y-2 max-h-64 overflow-y-auto">
               {mockQuestions.map((q, index) => (
                 <div
                   key={q.id}
@@ -109,17 +115,17 @@ export const MockInterviewModal: React.FC<MockInterviewModalProps> = ({
                     onClose();
                     onStartQuestion(q);
                   }}
-                  className="flex items-center justify-between p-3.5 rounded-2xl bg-rose-50/50 border border-pink-100 hover:border-pink-300 hover:bg-white transition-all cursor-pointer group shadow-sm"
+                  className="flex items-center justify-between p-3 rounded bg-[#0B0D11] border border-white/[0.04] hover:border-white/20 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-xl bg-pink-100 text-pink-700 text-xs font-black flex items-center justify-center">
+                    <span className="w-6 h-6 rounded bg-[#161B22] text-[#C9962C] text-xs font-bold flex items-center justify-center border border-white/[0.04]">
                       #{index + 1}
                     </span>
-                    <span className="text-xs font-bold text-slate-800 group-hover:text-pink-600 transition-colors line-clamp-1">
+                    <span className="text-xs font-sans font-bold text-[#EDEFF2] group-hover:text-[#C9962C] transition-colors line-clamp-1">
                       {q.title}
                     </span>
                   </div>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold">
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-[#161B22] text-[#8B94A3] border border-white/[0.04]">
                     {q.difficulty}
                   </span>
                 </div>

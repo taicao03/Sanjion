@@ -57,127 +57,129 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      {/* Top Header Bar - Ultra Clean Responsive Glass Style */}
-      <header className="sticky top-0 z-40 w-full border-b border-pink-200/50 bg-white/80 backdrop-blur-xl shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      {/* Top Header Bar - Editor Noir IDE Titlebar Style */}
+      <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-[#161B22]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
           
-          {/* 1. Left Logo Branding - ALWAYS VISIBLE ON MOBILE, IPAD & DESKTOP */}
-          <div
-            onClick={() => onSelectView("roadmap")}
-            className="flex items-center gap-2.5 cursor-pointer group flex-shrink-0"
-          >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-600 to-amber-400 flex items-center justify-center text-white shadow-md shadow-pink-500/20 group-hover:scale-105 transition-all">
-              <Sparkles className="w-5 h-5 fill-amber-300 text-amber-300 animate-pulse" />
+          {/* 1. Left Logo Branding */}
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <div
+              onClick={() => onSelectView("roadmap")}
+              className="flex items-center gap-1.5 cursor-pointer group"
+            >
+              <span className="font-mono font-bold text-[#C9962C] text-lg select-none group-hover:translate-x-0.5 transition-transform">&gt;</span>
+              <span className="font-display font-black text-lg text-[#EDEFF2] tracking-tight">
+                FE Sanjion
+              </span>
+              <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-[#C9962C]/40 text-[#C9962C] bg-[#C9962C]/10">
+                PRO
+              </span>
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-black bg-gradient-to-r from-pink-600 via-purple-600 to-rose-500 bg-clip-text text-transparent tracking-tight">
-                  Sanjion
-                </span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-xs">
-                  PRO
-                </span>
-              </div>
+
+            {/* Server Status Monitor Indicator */}
+            <div className="hidden md:flex items-center gap-1.5 text-[11px] font-mono text-[#8B94A3] pl-3 border-l border-white/[0.06]">
+              <span className={`inline-block w-2 h-2 rounded-full ${isConnected ? "bg-[#2FAE79]" : "bg-[#8B94A3]"}`} />
+              <span>{isConnected ? "Supabase Connected" : "Local Sandbox"}</span>
             </div>
           </div>
 
-          {/* 2. Center Navigation Tabs (ONLY VISIBLE ON DESKTOP XL, HIDDEN ON IPAD & MOBILE) */}
-          <nav className="hidden xl:flex items-center gap-1 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/60 backdrop-blur-md">
+          {/* 2. Center Navigation Tabs (VS Code Editor Tab style) */}
+          <nav className="hidden xl:flex items-center gap-1 h-full">
             <button
               onClick={() => onSelectView("roadmap")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
+              className={`flex items-center gap-2 px-3.5 h-14 text-xs font-medium font-mono border-b-2 transition-colors ${
                 currentView === "roadmap"
-                  ? "bg-white text-pink-600 shadow-md shadow-pink-500/10 border border-pink-100"
-                  : "text-slate-600 hover:text-pink-600 hover:bg-white/50"
+                  ? "border-[#C9962C] text-[#EDEFF2] bg-[#0B0D11]/40"
+                  : "border-transparent text-[#8B94A3] hover:text-[#EDEFF2] hover:bg-white/[0.02]"
               }`}
             >
-              <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" />
+              <Zap className="w-3.5 h-3.5 text-[#C9962C]" />
               Lộ Trình A-Z
             </button>
 
             <button
               onClick={() => onSelectView("dashboard")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
+              className={`flex items-center gap-2 px-3.5 h-14 text-xs font-medium font-mono border-b-2 transition-colors ${
                 currentView === "dashboard"
-                  ? "bg-white text-pink-600 shadow-md shadow-pink-500/10 border border-pink-100"
-                  : "text-slate-600 hover:text-pink-600 hover:bg-white/50"
+                  ? "border-[#C9962C] text-[#EDEFF2] bg-[#0B0D11]/40"
+                  : "border-transparent text-[#8B94A3] hover:text-[#EDEFF2] hover:bg-white/[0.02]"
               }`}
             >
-              <LayoutDashboard className="w-3.5 h-3.5" />
+              <LayoutDashboard className="w-3.5 h-3.5 text-[#5B54D9]" />
               Dashboard
             </button>
 
             <button
               onClick={() => onSelectView("questions")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
+              className={`flex items-center gap-2 px-3.5 h-14 text-xs font-medium font-mono border-b-2 transition-colors ${
                 currentView === "questions"
-                  ? "bg-white text-pink-600 shadow-md shadow-pink-500/10 border border-pink-100"
-                  : "text-slate-600 hover:text-pink-600 hover:bg-white/50"
+                  ? "border-[#C9962C] text-[#EDEFF2] bg-[#0B0D11]/40"
+                  : "border-transparent text-[#8B94A3] hover:text-[#EDEFF2] hover:bg-white/[0.02]"
               }`}
             >
-              <BookOpen className="w-3.5 h-3.5" />
+              <BookOpen className="w-3.5 h-3.5 text-[#2FAE79]" />
               Ngân Hàng Bài Tập
             </button>
 
             <button
               onClick={() => onSelectView("bookmarks")}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
+              className={`flex items-center gap-2 px-3.5 h-14 text-xs font-medium font-mono border-b-2 transition-colors ${
                 currentView === "bookmarks"
-                  ? "bg-white text-pink-600 shadow-md shadow-pink-500/10 border border-pink-100"
-                  : "text-slate-600 hover:text-pink-600 hover:bg-white/50"
+                  ? "border-[#C9962C] text-[#EDEFF2] bg-[#0B0D11]/40"
+                  : "border-transparent text-[#8B94A3] hover:text-[#EDEFF2] hover:bg-white/[0.02]"
               }`}
             >
-              <Bookmark className="w-3.5 h-3.5" />
+              <Bookmark className="w-3.5 h-3.5 text-[#8B94A3]" />
               Đã Lưu
             </button>
 
-            {/* Admin Management Tab - Visible only to OWNER or ADMIN */}
+            {/* Admin Management Tab */}
             {isAdminOrOwner && (
               <button
                 onClick={() => onSelectView("admin")}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
+                className={`flex items-center gap-2 px-3.5 h-14 text-xs font-medium font-mono border-b-2 transition-colors ${
                   currentView === "admin"
-                    ? "bg-gradient-to-r from-amber-500 to-purple-600 text-white shadow-md shadow-purple-500/20"
-                    : "text-amber-700 hover:text-purple-700 hover:bg-white/60"
+                    ? "border-[#C9962C] text-[#C9962C] bg-[#C9962C]/10"
+                    : "border-transparent text-[#C9962C]/80 hover:text-[#C9962C]"
                 }`}
               >
-                <Crown className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                <Crown className="w-3.5 h-3.5 text-[#C9962C]" />
                 Quản Trị Admin
               </button>
             )}
           </nav>
 
           {/* 3. Right Actions Area */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             {!isLoggedIn && (
               <button
                 onClick={onOpenAuthModal}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md shadow-purple-500/20 transition-all cursor-pointer animate-pulse"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono border border-[#5B54D9] text-[#EDEFF2] bg-[#5B54D9]/20 hover:bg-[#5B54D9]/40 transition-colors cursor-pointer"
               >
-                <LogIn className="w-3.5 h-3.5" />
+                <LogIn className="w-3.5 h-3.5 text-[#5B54D9]" />
                 <span>Đăng Nhập</span>
               </button>
             )}
 
-            {/* Quick Mock Interview Button */}
+            {/* Quick Mock Interview Button - Outline Gold */}
             <button
               onClick={onOpenMockInterview}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 shadow-sm shadow-amber-500/20 transition-all cursor-pointer"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono border border-[#C9962C] text-[#C9962C] hover:bg-[#C9962C]/10 transition-colors cursor-pointer"
             >
-              <Trophy className="w-3.5 h-3.5 text-slate-950" />
+              <Trophy className="w-3.5 h-3.5 text-[#C9962C]" />
               Thi Thử 45'
             </button>
 
-            {/* Combined Compact User Stats Badge (Streak + Points) */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/80 text-xs font-extrabold text-slate-700 shadow-xs">
-              <span className="flex items-center gap-1 text-amber-600" title="Streak ngày học">
-                <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500 animate-pulse" />
-                {isLoggedIn ? profile.streakCount : 0}d
+            {/* Compact User Stats (Mono ledger format) */}
+            <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-[#0B0D11] border border-white/[0.06] text-xs font-mono text-[#EDEFF2]">
+              <span className="flex items-center gap-1 text-[#C9962C]" title="Streak ngày học">
+                <Flame className="w-3.5 h-3.5 text-[#C9962C]" />
+                <span>{isLoggedIn ? profile.streakCount : 0}d</span>
               </span>
-              <span className="text-slate-300">|</span>
-              <span className="flex items-center gap-1 text-pink-600" title="Điểm kinh nghiệm">
-                <Star className="w-3.5 h-3.5 fill-pink-500 text-pink-500" />
-                {isLoggedIn ? profile.totalPoints : 0}
+              <span className="text-[#232A35]">|</span>
+              <span className="flex items-center gap-1 text-[#C9962C]" title="Điểm kinh nghiệm">
+                <Star className="w-3.5 h-3.5 text-[#C9962C]" />
+                <span>+{isLoggedIn ? profile.totalPoints : 0} XP</span>
               </span>
             </div>
 
@@ -185,35 +187,34 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="relative">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="flex items-center gap-1.5 p-1 rounded-full bg-slate-100 hover:bg-pink-50 border border-slate-200/80 transition-all cursor-pointer group"
+                className="flex items-center gap-1.5 p-1 rounded bg-[#0B0D11] hover:border-white/20 border border-white/[0.06] transition-colors cursor-pointer group"
               >
-                <div className="w-8 h-8 rounded-full ring-2 ring-pink-400/40 overflow-hidden flex-shrink-0">
+                <div className="w-7 h-7 rounded overflow-hidden flex-shrink-0 bg-[#232A35]">
                   <img
                     src={isLoggedIn ? profile.avatarUrl : "https://api.dicebear.com/7.x/avataaars/svg?seed=guest"}
                     alt={isLoggedIn ? profile.fullName : "Khách"}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:text-pink-600 transition-transform" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#8B94A3] group-hover:text-[#EDEFF2] transition-transform" />
               </button>
 
-              {/* Clean Popover Menu */}
+              {/* Popover Menu - Noir Surface */}
               {isMenuOpen && (
-                <div className="absolute right-0 top-12 w-64 bg-white border border-pink-200/80 rounded-2xl shadow-2xl p-2.5 z-50 animate-fadeIn space-y-1">
+                <div className="absolute right-0 top-11 w-64 bg-[#161B22] border border-white/[0.08] rounded shadow-2xl p-2 z-50 animate-fadeIn space-y-1 font-mono">
                   {/* Profile info header */}
-                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 mb-1 space-y-1.5">
-                    <p className="text-xs font-black text-slate-900 line-clamp-1">
+                  <div className="p-2.5 bg-[#0B0D11] rounded border border-white/[0.06] mb-1 space-y-1">
+                    <p className="text-xs font-bold text-[#EDEFF2] line-clamp-1 font-sans">
                       {isLoggedIn ? profile.fullName : "Khách (Chưa đăng nhập)"}
                     </p>
-                    <div className="flex items-center justify-between text-[11px] text-slate-500">
-                      <span>Role hiện tại:</span>
-                      <b className="text-amber-600 font-black">{isLoggedIn ? (profile.role || 'USER') : 'GUEST'}</b>
+                    <div className="flex items-center justify-between text-[11px] text-[#8B94A3]">
+                      <span>Role:</span>
+                      <b className="text-[#C9962C] font-bold">{isLoggedIn ? (profile.role || 'USER') : 'GUEST'}</b>
                     </div>
 
-                    {/* Database API Connection indicator inside menu */}
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1.5 pt-1.5 border-t border-slate-200/60 font-medium">
-                      <Database className={`w-3 h-3 ${isConnected ? "text-emerald-500" : "text-amber-500"}`} />
-                      <span>{isConnected ? "Supabase Realtime DB" : "Local Sandbox Mode"}</span>
+                    <div className="flex items-center gap-1.5 text-[10px] text-[#8B94A3] mt-1.5 pt-1.5 border-t border-white/[0.06]">
+                      <Database className={`w-3 h-3 ${isConnected ? "text-[#2FAE79]" : "text-[#8B94A3]"}`} />
+                      <span>{isConnected ? "Supabase DB" : "Local Sandbox"}</span>
                     </div>
                   </div>
 
@@ -223,9 +224,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setIsMenuOpen(false);
                         onSelectView("admin");
                       }}
-                      className="w-full flex items-center gap-2 p-2 rounded-xl text-xs font-extrabold text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors"
+                      className="w-full flex items-center gap-2 p-2 rounded text-xs text-[#C9962C] bg-[#C9962C]/10 hover:bg-[#C9962C]/20 transition-colors"
                     >
-                      <Crown className="w-4 h-4 text-amber-600" />
+                      <Crown className="w-4 h-4 text-[#C9962C]" />
                       Trang Quản Trị Admin
                     </button>
                   )}
@@ -235,9 +236,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setIsMenuOpen(false);
                       onOpenMockInterview();
                     }}
-                    className="w-full flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                    className="w-full flex items-center gap-2 p-2 rounded text-xs text-[#EDEFF2] hover:bg-white/[0.04] transition-colors"
                   >
-                    <Trophy className="w-4 h-4 text-amber-600" />
+                    <Trophy className="w-4 h-4 text-[#C9962C]" />
                     Thi Thử Sanjion 45'
                   </button>
 
@@ -246,9 +247,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setIsMenuOpen(false);
                       setIsEditModalOpen(true);
                     }}
-                    className="w-full flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                    className="w-full flex items-center gap-2 p-2 rounded text-xs text-[#EDEFF2] hover:bg-white/[0.04] transition-colors"
                   >
-                    <Edit3 className="w-4 h-4 text-pink-600" />
+                    <Edit3 className="w-4 h-4 text-[#5B54D9]" />
                     Chỉnh Sửa Hồ Sơ & Tên
                   </button>
 
@@ -257,18 +258,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setIsMenuOpen(false);
                       setIsApiKeyModalOpen(true);
                     }}
-                    className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between p-2 rounded text-xs text-[#EDEFF2] hover:bg-white/[0.04] transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
-                      <Key className="w-4 h-4 text-amber-500" />
+                      <Key className="w-4 h-4 text-[#C9962C]" />
                       <span>Cấu Hình AI Key</span>
                     </div>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold transition-all ${
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${
                       hasCustomKey 
-                        ? "bg-emerald-100 text-emerald-700 border border-emerald-200" 
-                        : "bg-amber-100 text-amber-700 border border-amber-200"
+                        ? "bg-[#2FAE79]/20 text-[#2FAE79] border border-[#2FAE79]/40" 
+                        : "bg-[#232A35] text-[#8B94A3] border border-white/[0.06]"
                     }`}>
-                      {hasCustomKey ? "🟢 Đã cài Key" : "⚡ Mặc Định"}
+                      {hasCustomKey ? "Đã cài Key" : "Mặc Định"}
                     </span>
                   </button>
 
@@ -278,7 +279,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setIsMenuOpen(false);
                         onOpenAuthModal();
                       }}
-                      className="w-full flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-purple-600 hover:bg-purple-50 transition-colors"
+                      className="w-full flex items-center gap-2 p-2 rounded text-xs text-[#5B54D9] hover:bg-[#5B54D9]/10 transition-colors"
                     >
                       <LogIn className="w-4 h-4" />
                       Đăng Nhập / Đăng Ký
@@ -289,7 +290,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         setIsMenuOpen(false);
                         onLogout();
                       }}
-                      className="w-full flex items-center gap-2 p-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
+                      className="w-full flex items-center gap-2 p-2 rounded text-xs text-[#C1553B] hover:bg-[#C1553B]/10 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
                       Đăng Xuất Tài Khoản
@@ -303,75 +304,55 @@ export const Navbar: React.FC<NavbarProps> = ({
       </header>
 
       {/* Mobile & iPad Bottom Navigation Bar */}
-      <div className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-pink-200/80 backdrop-blur-lg px-2 py-2 flex items-center justify-around shadow-lg">
+      <div className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#161B22] border-t border-white/[0.06] px-2 py-2 flex items-center justify-around font-mono">
         <button
           onClick={() => onSelectView("roadmap")}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-all ${
-            currentView === "roadmap"
-              ? "text-pink-600"
-              : "text-slate-500 hover:text-slate-800"
+          className={`flex flex-col items-center gap-0.5 text-[10px] transition-all ${
+            currentView === "roadmap" ? "text-[#C9962C]" : "text-[#8B94A3]"
           }`}
         >
-          <div className={`p-1.5 rounded-xl ${currentView === "roadmap" ? "bg-pink-100 text-pink-600" : ""}`}>
-            <Zap className="w-4 h-4 fill-amber-400 text-amber-500" />
-          </div>
+          <Zap className="w-4 h-4" />
           <span>Lộ Trình</span>
         </button>
 
         <button
           onClick={() => onSelectView("dashboard")}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-all ${
-            currentView === "dashboard"
-              ? "text-pink-600"
-              : "text-slate-500 hover:text-slate-800"
+          className={`flex flex-col items-center gap-0.5 text-[10px] transition-all ${
+            currentView === "dashboard" ? "text-[#C9962C]" : "text-[#8B94A3]"
           }`}
         >
-          <div className={`p-1.5 rounded-xl ${currentView === "dashboard" ? "bg-pink-100 text-pink-600" : ""}`}>
-            <LayoutDashboard className="w-4 h-4" />
-          </div>
+          <LayoutDashboard className="w-4 h-4" />
           <span>Dashboard</span>
         </button>
 
         <button
           onClick={() => onSelectView("questions")}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-all ${
-            currentView === "questions"
-              ? "text-pink-600"
-              : "text-slate-500 hover:text-slate-800"
+          className={`flex flex-col items-center gap-0.5 text-[10px] transition-all ${
+            currentView === "questions" ? "text-[#C9962C]" : "text-[#8B94A3]"
           }`}
         >
-          <div className={`p-1.5 rounded-xl ${currentView === "questions" ? "bg-pink-100 text-pink-600" : ""}`}>
-            <BookOpen className="w-4 h-4" />
-          </div>
+          <BookOpen className="w-4 h-4" />
           <span>Bài Tập</span>
         </button>
 
         <button
           onClick={() => onSelectView("bookmarks")}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-all ${
-            currentView === "bookmarks"
-              ? "text-pink-600"
-              : "text-slate-500 hover:text-slate-800"
+          className={`flex flex-col items-center gap-0.5 text-[10px] transition-all ${
+            currentView === "bookmarks" ? "text-[#C9962C]" : "text-[#8B94A3]"
           }`}
         >
-          <div className={`p-1.5 rounded-xl ${currentView === "bookmarks" ? "bg-pink-100 text-pink-600" : ""}`}>
-            <Bookmark className="w-4 h-4" />
-          </div>
+          <Bookmark className="w-4 h-4" />
           <span>Đã Lưu</span>
         </button>
 
         {isAdminOrOwner && (
           <button
             onClick={() => onSelectView("admin")}
-            className={`flex flex-col items-center gap-0.5 text-[10px] font-bold transition-all ${
-              currentView === "admin"
-                ? "text-amber-600"
-                : "text-slate-500 hover:text-slate-800"
+            className={`flex flex-col items-center gap-0.5 text-[10px] transition-all ${
+              currentView === "admin" ? "text-[#C9962C]" : "text-[#8B94A3]"
             }`}
           >
-            <div className={`p-1.5 rounded-xl ${currentView === "admin" ? "bg-amber-100 text-amber-600" : ""}`}>
-              <Crown className="w-4 h-4 text-amber-500 fill-amber-300" />
-            </div>
+            <Crown className="w-4 h-4" />
             <span>Admin</span>
           </button>
         )}

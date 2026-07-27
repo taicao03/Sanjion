@@ -217,7 +217,7 @@ export function App() {
   const bookmarkedQuestions = questions.filter((q) => bookmarks.includes(q.id));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-purple-50/50 to-amber-50/50 text-slate-800 flex flex-col font-sans selection:bg-pink-500 selection:text-white">
+    <div className="min-h-screen bg-[#0B0D11] text-[#EDEFF2] flex flex-col font-sans selection:bg-[#C9962C]/30 selection:text-[#EDEFF2]">
       {/* Navigation Header */}
       <Navbar
         currentView={currentView}
@@ -250,7 +250,7 @@ export function App() {
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />
         ) : currentView === 'admin' ? (
-          /* Admin Dashboard & User Roles Management View */
+          /* Admin Dashboard */
           <AdminDashboard
             currentProfile={profile}
             questions={questions}
@@ -263,14 +263,13 @@ export function App() {
             onSelectView={(v) => setCurrentView(v as any)}
           />
         ) : currentView === 'roadmap' ? (
-          /* Junior to Senior Roadmap View */
+          /* Roadmap View */
           <RoadmapView
             questions={questions}
             progressMap={progressMap}
             profile={profile}
             onSelectQuestion={handleSelectQuestion}
             onOpenAiAssistant={() => {
-              // Open AI Assistant by finding floating button or trigger
               const btn = document.querySelector('button[title*="Trợ Lý AI Tutor"], button:has(svg.animate-bounce)') as HTMLButtonElement;
               if (btn) btn.click();
             }}
@@ -278,34 +277,33 @@ export function App() {
         ) : currentView === 'dashboard' ? (
           /* Dashboard View */
           <div className="space-y-6 sm:space-y-8 animate-fadeIn">
-            {/* Hero Welcome Banner */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-pink-500 via-purple-600 to-amber-500 p-5 sm:p-8 shadow-xl text-white">
+            {/* Hero Welcome Banner - Editor Noir Style */}
+            <div className="relative overflow-hidden rounded-lg bg-[#161B22] border border-white/[0.06] p-6 sm:p-8 font-mono">
               <div className="relative z-10 max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white text-[11px] sm:text-xs font-extrabold mb-3 sm:mb-4 shadow-sm">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                  Sanjion đánh bay mọi thứ
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#0B0D11] border border-white/[0.06] text-[#C9962C] text-xs font-bold mb-3">
+                  <Sparkles className="w-3.5 h-3.5 text-[#C9962C]" />
+                  <span>FE Sanjion Atelier Edition</span>
                 </div>
-                <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-                  Chào mừng trở lại, {profile.fullName}! 👋
+                <h1 className="text-2xl sm:text-3xl font-display font-medium text-[#EDEFF2] tracking-tight">
+                  sanjion@fe ~ % ready for senior review
                 </h1>
-                <p className="text-pink-100 text-xs sm:text-sm mt-2 sm:mt-3 leading-relaxed font-medium">
-                  Rèn luyện kiến thức Sanjion chọn lọc từ Google, Meta, VNG &
-                  Shopee. Hoặc sử dụng AI Model <span className="font-bold underline text-amber-300">{aiService.getActiveModelName()}</span> để tự động tạo bài tập Sanjion mới không giới hạn!
+                <p className="text-[#8B94A3] text-xs sm:text-sm mt-3 leading-relaxed">
+                  Chào mừng trở lại, <span className="text-[#EDEFF2] font-bold">{profile.fullName}</span>. Hệ thống ôn luyện Frontend Senior chuẩn Editor Noir.
                 </p>
-                <div className="mt-5 sm:mt-6 flex flex-wrap gap-2.5 sm:gap-3">
+                <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     onClick={() => setCurrentView('questions')}
-                    className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl bg-white hover:bg-rose-50 text-pink-700 font-black text-xs sm:text-sm shadow-lg shadow-pink-900/10 transition-all flex items-center gap-2 cursor-pointer"
+                    className="px-4 py-2 rounded bg-[#C9962C] hover:bg-[#C9962C]/90 text-[#0B0D11] font-bold text-xs transition-colors flex items-center gap-2 cursor-pointer"
                   >
-                    <BookOpen className="w-4 h-4 text-pink-600" />
+                    <BookOpen className="w-4 h-4" />
                     Luyện Bài Sanjion
                   </button>
                   <button
                     onClick={() => setIsGenerateModalOpen(true)}
-                    className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl bg-slate-900/40 hover:bg-slate-900/60 text-amber-300 border border-amber-300/40 font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer backdrop-blur-md"
+                    className="px-4 py-2 rounded bg-[#0B0D11] hover:bg-white/[0.04] text-[#EDEFF2] border border-white/[0.06] font-bold text-xs transition-colors flex items-center gap-2 cursor-pointer"
                   >
-                    <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                    ✨ Sinh Bài Tập Bằng AI
+                    <Sparkles className="w-4 h-4 text-[#5B54D9]" />
+                    Sinh Bài Tập Bằng AI
                   </button>
                 </div>
               </div>
@@ -331,24 +329,23 @@ export function App() {
           </div>
         ) : currentView === 'questions' ? (
           /* Questions Bank View */
-          <div className="space-y-4 sm:space-y-6 animate-fadeIn">
+          <div className="space-y-4 sm:space-y-6 animate-fadeIn font-mono">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
+                <h1 className="text-xl font-display font-medium text-[#EDEFF2] tracking-tight">
                   Ngân Hàng Câu Hỏi Sanjion
                 </h1>
-                <p className="text-xs text-slate-500 mt-1 font-medium">
-                  Tổng hợp các câu hỏi chọn lọc hoặc tự tạo không giới hạn bằng
-                  AI.
+                <p className="text-xs text-[#8B94A3] mt-1">
+                  Bộ câu hỏi kỹ thuật Sanjion và tự động tạo bằng AI.
                 </p>
               </div>
 
               <button
                 onClick={() => setIsGenerateModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black text-xs shadow-md shadow-purple-500/20 transition-all cursor-pointer self-start sm:self-auto"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-[#5B54D9] text-[#EDEFF2] bg-[#5B54D9]/20 hover:bg-[#5B54D9]/30 text-xs font-bold transition-colors cursor-pointer self-start sm:self-auto"
               >
-                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />✨
-                Sinh Câu Hỏi Bằng AI
+                <Sparkles className="w-3.5 h-3.5 text-[#5B54D9]" />
+                Sinh Câu Hỏi AI
               </button>
             </div>
 
@@ -366,14 +363,13 @@ export function App() {
             />
 
             {filteredQuestions.length === 0 ? (
-              <div className="py-12 sm:py-16 text-center bg-white/80 rounded-3xl border border-pink-100 shadow-sm">
-                <Code2 className="w-10 h-10 text-pink-400 mx-auto mb-3 opacity-60" />
-                <h3 className="text-base font-bold text-slate-700">
+              <div className="py-12 text-center bg-[#161B22] rounded-lg border border-white/[0.06]">
+                <Code2 className="w-8 h-8 text-[#8B94A3] mx-auto mb-2 opacity-60" />
+                <h3 className="text-sm font-bold text-[#EDEFF2]">
                   Không tìm thấy câu hỏi phù hợp
                 </h3>
-                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                  Thử thay đổi bộ lọc hoặc sử dụng nút "Sinh Câu Hỏi Bằng AI" để AI tự
-                  động thiết kế câu hỏi mới cho bạn!
+                <p className="text-xs text-[#8B94A3] mt-1 max-w-md mx-auto">
+                  Thử đổi từ khóa hoặc dùng tính năng Sinh Câu Hỏi Bằng AI.
                 </p>
               </div>
             ) : (
@@ -393,25 +389,24 @@ export function App() {
           </div>
         ) : (
           /* Bookmarks View */
-          <div className="space-y-4 sm:space-y-6 animate-fadeIn">
+          <div className="space-y-4 sm:space-y-6 animate-fadeIn font-mono">
             <div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
+              <h1 className="text-xl font-display font-medium text-[#EDEFF2] tracking-tight">
                 Câu Hỏi Sanjion Đã Lưu
               </h1>
-              <p className="text-xs text-slate-500 mt-1 font-medium">
-                Danh sách những câu hỏi quan trọng cần xem lại trước kỳ Sanjion.
+              <p className="text-xs text-[#8B94A3] mt-1">
+                Danh sách những câu hỏi quan trọng đã đánh dấu bookmark.
               </p>
             </div>
 
             {bookmarkedQuestions.length === 0 ? (
-              <div className="py-12 sm:py-16 text-center bg-white/80 rounded-3xl border border-pink-100 shadow-sm">
-                <Trophy className="w-9 h-9 text-amber-400 mx-auto mb-3" />
-                <h3 className="text-base font-bold text-slate-700">
+              <div className="py-12 text-center bg-[#161B22] rounded-lg border border-white/[0.06]">
+                <Trophy className="w-8 h-8 text-[#C9962C] mx-auto mb-2" />
+                <h3 className="text-sm font-bold text-[#EDEFF2]">
                   Bạn chưa lưu câu hỏi Sanjion nào
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Bấm nút biểu tượng bookmark trên các câu hỏi để đưa vào danh
-                  sách xem lại tại đây.
+                <p className="text-xs text-[#8B94A3] mt-1">
+                  Bấm biểu tượng bookmark trên các thẻ câu hỏi để lưu lại.
                 </p>
               </div>
             ) : (

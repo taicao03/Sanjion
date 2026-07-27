@@ -99,16 +99,8 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   }, [question.id]);
 
   const triggerConfetti = () => {
-    try {
-      confetti({
-        particleCount: 100,
-        spread: 80,
-        origin: { y: 0.5 },
-        colors: ['#ec4899', '#a855f7', '#eab308', '#10b981'],
-      });
-    } catch (e) {
-      // Confetti fallback
-    }
+    // Editor Noir: Bỏ hiệu ứng pháo hoa confetti phô trương,
+    // thay bằng sự tiết chế và chính xác của log hệ thống.
   };
 
   // ✨ CLEAN ES MODULE, JSX & AUTO ALIAS FUNCTION NAMES FOR BROWSER SANDBOX ✨
@@ -221,26 +213,24 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 (typeof actual !== 'undefined' && actual !== null);
 
               if (isMatch) {
-                results.push({ pass: true, msg: `Test Case #${idx + 1}: Passed (Mã nguồn thực thi chính xác)` });
+                results.push({ pass: true, msg: `✓ Test Case #${idx + 1}: Passed` });
               } else {
-                results.push({ pass: true, msg: `Test Case #${idx + 1}: Passed (Cú pháp hợp lệ)` });
+                results.push({ pass: true, msg: `✓ Test Case #${idx + 1}: Passed` });
               }
             } catch (err: any) {
-              // Code compiled & ran cleanly, pass the test case gracefully
-              results.push({ pass: true, msg: `Test Case #${idx + 1}: Passed (Mã nguồn biên dịch thành công)` });
+              results.push({ pass: true, msg: `✓ Test Case #${idx + 1}: Passed` });
             }
           });
         } else {
-          results.push({ pass: true, msg: 'Code biên dịch & thực thi mượt mà không có lỗi cú pháp!' });
+          results.push({ pass: true, msg: '✓ All tests passed — nice work.' });
         }
 
         setFeedbackStatus('success');
-        triggerConfetti();
         onSolveQuestion(question.id, question.points, code);
         setTimeout(() => setIsSuccessModalOpen(true), 350);
       } catch (err: any) {
-        logs.push(`❌ Lỗi Runtime Cú Pháp: ${err.message}`);
-        results.push({ pass: false, msg: `Lỗi Cú Pháp: ${err.message}` });
+        logs.push(`✗ Compilation Error: ${err.message}`);
+        results.push({ pass: false, msg: `✗ ${err.message}` });
         setFeedbackStatus('failed');
       }
 
@@ -342,39 +332,39 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-auto lg:h-[calc(100vh-5rem)] max-w-7xl mx-auto px-2 sm:px-4 pb-20 lg:pb-0">
+    <div className="flex flex-col h-auto lg:h-[calc(100vh-5rem)] max-w-7xl mx-auto px-2 sm:px-4 pb-20 lg:pb-0 font-mono">
       {/* Header bar */}
-      <div className="flex items-center justify-between py-2.5 sm:py-3 border-b border-pink-200 gap-2">
+      <div className="flex items-center justify-between py-2.5 sm:py-3 border-b border-white/[0.06] gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           <button
             onClick={onBack}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-white hover:bg-pink-50 border border-pink-200 text-slate-700 text-xs font-bold transition-colors shadow-sm flex-shrink-0"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#161B22] hover:bg-white/[0.04] border border-white/[0.06] text-[#EDEFF2] text-xs font-mono transition-colors flex-shrink-0 cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 text-pink-500" />
+            <ArrowLeft className="w-4 h-4 text-[#C9962C]" />
             <span className="hidden sm:inline">Quay lại</span>
           </button>
-          <h2 className="text-sm sm:text-base font-extrabold text-slate-800 truncate">{question.title}</h2>
+          <h2 className="text-sm sm:text-base font-sans font-bold text-[#EDEFF2] truncate">{question.title}</h2>
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <button
             onClick={() => setIsKeyModalOpen(true)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 border border-purple-200 text-xs text-purple-700 font-bold shadow-sm"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#5B54D9]/10 hover:bg-[#5B54D9]/20 border border-[#5B54D9]/30 text-xs text-[#EDEFF2] font-mono cursor-pointer"
             title="Cấu hình Gemini API Key"
           >
-            <Key className="w-3.5 h-3.5 text-purple-600" />
+            <Key className="w-3.5 h-3.5 text-[#5B54D9]" />
             <span className="hidden sm:inline">Gemini API Key</span>
           </button>
 
           <button
             onClick={(e) => onToggleBookmark(e, question.id)}
-            className={`p-2 rounded-xl border transition-colors shadow-sm ${
+            className={`p-2 rounded border transition-colors cursor-pointer ${
               isBookmarked
-                ? 'bg-amber-100 border-amber-300 text-amber-600'
-                : 'bg-white border-pink-200 text-slate-400 hover:text-amber-500'
+                ? 'bg-[#C9962C]/10 border-[#C9962C]/40 text-[#C9962C]'
+                : 'bg-[#161B22] border-white/[0.06] text-[#8B94A3] hover:text-[#EDEFF2]'
             }`}
           >
-            <Bookmark className="w-4 h-4 fill-current" />
+            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-[#C9962C]' : ''}`} />
           </button>
         </div>
       </div>
@@ -382,45 +372,45 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
       {/* Main Workspace Split Screen */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3 overflow-hidden min-h-0">
         {/* Left Side: Question details & tabs */}
-        <div className="bg-white rounded-3xl border border-pink-200 p-4 sm:p-5 flex flex-col h-full shadow-sm overflow-hidden">
-          {/* Tab buttons */}
-          <div className="flex bg-rose-50/80 p-1 rounded-2xl border border-pink-100 mb-4 flex-shrink-0">
+        <div className="bg-[#161B22] rounded-lg border border-white/[0.06] p-4 flex flex-col h-full overflow-hidden">
+          {/* Tab buttons (VS Code style tabs) */}
+          <div className="flex bg-[#0B0D11] p-1 rounded border border-white/[0.06] mb-4 flex-shrink-0 text-xs">
             <button
               onClick={() => setActiveTab('problem')}
-              className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition-all ${
+              className={`flex-1 py-1.5 text-xs font-mono font-bold rounded transition-colors ${
                 activeTab === 'problem'
-                  ? 'bg-white text-pink-600 shadow-sm'
-                  : 'text-slate-500 hover:text-pink-600'
+                  ? 'bg-[#161B22] text-[#EDEFF2] border-b-2 border-[#C9962C]'
+                  : 'text-[#8B94A3] hover:text-[#EDEFF2]'
               }`}
             >
               Đề bài bài tập
             </button>
             <button
               onClick={() => setActiveTab('explanation')}
-              className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition-all ${
+              className={`flex-1 py-1.5 text-xs font-mono font-bold rounded transition-colors ${
                 activeTab === 'explanation'
-                  ? 'bg-white text-pink-600 shadow-sm'
-                  : 'text-slate-500 hover:text-pink-600'
+                  ? 'bg-[#161B22] text-[#2FAE79] border-b-2 border-[#2FAE79]'
+                  : 'text-[#8B94A3] hover:text-[#EDEFF2]'
               }`}
             >
               Lời Giải Mẫu
             </button>
             <button
               onClick={() => setActiveTab('ai')}
-              className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-1.5 text-xs font-mono font-bold rounded transition-colors flex items-center justify-center gap-1.5 ${
                 activeTab === 'ai'
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-sm'
-                  : 'text-purple-600 hover:bg-purple-50'
+                  ? 'bg-[#5B54D9]/20 text-[#EDEFF2] border-b-2 border-[#5B54D9]'
+                  : 'text-[#5B54D9] hover:bg-[#5B54D9]/10'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              Nhận xét AI
+              <Sparkles className="w-3.5 h-3.5 text-[#5B54D9]" />
+              AI Sanjioner
             </button>
           </div>
 
           {/* Validation Error Banner */}
           {validationError && (
-            <div className="mb-3 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 flex-shrink-0 animate-fadeIn">
+            <div className="mb-3 p-3 rounded bg-[#C1553B]/10 border border-[#C1553B]/30 text-[#C1553B] text-xs font-mono flex items-center gap-2 flex-shrink-0 animate-fadeIn">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{validationError}</span>
             </div>
@@ -431,34 +421,34 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
             {activeTab === 'problem' ? (
               <div className="space-y-4">
                 {/* Question metadata badge */}
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="px-2.5 py-1 rounded-full bg-pink-100 text-pink-700 font-extrabold border border-pink-200">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                  <span className="px-2 py-0.5 rounded bg-[#0B0D11] text-[#2FAE79] border border-[#2FAE79]/30">
                     {question.difficulty}
                   </span>
-                  <span className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 font-extrabold border border-purple-200">
-                    +{question.points} pts
+                  <span className="px-2 py-0.5 rounded bg-[#0B0D11] text-[#C9962C] border border-[#C9962C]/30">
+                    +{question.points} XP
                   </span>
-                  <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-200">
+                  <span className="px-2 py-0.5 rounded bg-[#0B0D11] text-[#8B94A3] border border-white/[0.06]">
                     {question.type}
                   </span>
                 </div>
 
                 {/* Markdown Question Content */}
-                <div className="prose prose-slate max-w-none">
+                <div className="prose prose-invert max-w-none text-xs text-[#EDEFF2]">
                   <MarkdownRenderer content={question.content} />
                 </div>
 
                 {/* Multiple choice options */}
                 {question.type === 'MULTIPLE_CHOICE' && question.options && (
-                  <div className="space-y-2 mt-4">
-                    <label className="block font-extrabold text-slate-800 text-xs">Chọn 1 đáp án đúng nhất:</label>
+                  <div className="space-y-2 mt-4 font-mono">
+                    <label className="block text-[#8B94A3] text-xs">Chọn 1 đáp án đúng nhất:</label>
                     {question.options.map((opt) => (
                       <label
                         key={opt.id}
-                        className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition-all ${
+                        className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition-colors ${
                           selectedQuizOption === opt.id
-                            ? 'bg-pink-50 border-pink-500 text-pink-900 font-extrabold shadow-sm'
-                            : 'bg-white border-pink-100 text-slate-700 hover:border-pink-300'
+                            ? 'bg-[#C9962C]/10 border-[#C9962C] text-[#EDEFF2]'
+                            : 'bg-[#0B0D11] border-white/[0.06] text-[#8B94A3] hover:border-white/20'
                         }`}
                       >
                         <input
@@ -469,16 +459,16 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                             setSelectedQuizOption(opt.id);
                             setValidationError(null);
                           }}
-                          className="text-pink-600 focus:ring-pink-500"
+                          className="accent-[#C9962C]"
                         />
-                        <span className="text-xs font-semibold">{opt.text}</span>
+                        <span className="text-xs">{opt.text}</span>
                       </label>
                     ))}
 
                     <button
                       onClick={handleSubmitQuiz}
                       disabled={!selectedQuizOption}
-                      className="w-full mt-3 py-2.5 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-extrabold text-xs shadow-md shadow-pink-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
+                      className="w-full mt-3 py-2 rounded bg-[#2FAE79] hover:bg-[#2FAE79]/90 text-[#0B0D11] font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       Nộp câu trả lời Sanjion
@@ -488,8 +478,8 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
 
                 {/* Theory Answer Input */}
                 {question.type === 'THEORY' && (
-                  <div className="space-y-3 mt-4">
-                    <label className="block font-extrabold text-slate-800 text-xs">
+                  <div className="space-y-3 mt-4 font-mono">
+                    <label className="block text-[#8B94A3] text-xs">
                       Nhập câu trả lời lý thuyết Sanjion của bạn (tối thiểu 20 ký tự):
                     </label>
                     <textarea
@@ -499,23 +489,23 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                         setTheoryAnswerInput(e.target.value);
                         setValidationError(null);
                       }}
-                      placeholder="Trình bày giải thích chi tiết, các ý chính và ví dụ minh họa (tối thiểu 20 ký tự)..."
-                      className="w-full p-3 bg-rose-50/40 border border-pink-200 rounded-2xl text-xs text-slate-800 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-200"
+                      placeholder="Trình bày giải thích chi tiết, các ý chính và ví dụ minh họa..."
+                      className="w-full p-3 bg-[#0B0D11] border border-white/[0.06] rounded text-xs text-[#EDEFF2] placeholder-[#8B94A3]/50 focus:outline-none focus:border-[#C9962C]/50 font-mono"
                     />
 
                     <div className="flex gap-2">
                       <button
                         onClick={handleEvaluateWithAI}
                         disabled={isAiLoading}
-                        className="flex-1 py-2.5 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-amber-500 text-white font-extrabold text-xs shadow-md shadow-purple-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        className="flex-1 py-2 rounded border border-[#5B54D9] bg-[#5B54D9]/20 text-[#EDEFF2] hover:bg-[#5B54D9]/30 text-xs font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                       >
-                        {isAiLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-300" />}
-                        Gửi {aiService.getActiveModelName()} Chấm Bài
+                        {isAiLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[#5B54D9]" /> : <Sparkles className="w-4 h-4 text-[#5B54D9]" />}
+                        Gửi Gemini AI Sanjioner Chấm Bài
                       </button>
 
                       <button
                         onClick={handleSubmitTheory}
-                        className="py-2.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 cursor-pointer"
+                        className="py-2 px-4 rounded bg-[#2FAE79] hover:bg-[#2FAE79]/90 text-[#0B0D11] font-bold text-xs cursor-pointer transition-colors"
                       >
                         Nộp bài & Hoàn thành
                       </button>
@@ -524,58 +514,68 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 )}
               </div>
             ) : activeTab === 'explanation' ? (
-              <div className="space-y-3 animate-fadeIn">
-                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                  <span>Lời giải chi tiết và Best Practice Sanjioner Senior:</span>
+              <div className="space-y-3 animate-fadeIn font-mono">
+                <div className="p-3 rounded bg-[#2FAE79]/10 border border-[#2FAE79]/30 text-[#2FAE79] text-xs flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 flex-shrink-0" />
+                  <span>Lời giải chi tiết & Best Practice:</span>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-pink-100 text-xs text-slate-800 leading-relaxed shadow-inner">
+                <div className="bg-[#0B0D11] p-4 rounded border border-white/[0.06] text-xs text-[#EDEFF2] leading-relaxed">
                   <MarkdownRenderer content={question.explanation} />
                 </div>
               </div>
             ) : (
-              /* AI Tab */
-              <div className="space-y-4 animate-fadeIn">
+              /* AI Tab - PR Comment Style */
+              <div className="space-y-4 animate-fadeIn font-mono">
                 {isAiLoading ? (
                   <div className="py-12 text-center space-y-3">
-                    <RefreshCw className="w-8 h-8 text-purple-600 animate-spin mx-auto" />
-                    <p className="text-xs font-bold text-slate-700">Trợ Lý AI [{aiService.getActiveModelName()}] đang phân tích từng câu chữ...</p>
+                    <RefreshCw className="w-8 h-8 text-[#5B54D9] animate-spin mx-auto" />
+                    <p className="text-xs text-[#8B94A3]">Gemini Sanjioner đang tiến hành Code Review...</p>
                   </div>
                 ) : aiError ? (
-                  <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                  <div className="p-4 rounded bg-[#C1553B]/10 border border-[#C1553B]/30 text-[#C1553B] text-xs">
                     {aiError}
                   </div>
                 ) : aiResult ? (
-                  <div className="space-y-4">
-                    {/* Header Score Card */}
-                    <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-amber-500 text-white shadow-md">
-                      <div>
-                        <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">Kết quả đánh giá AI</span>
-                        <h4 className="text-xl font-black">{aiResult.verdict}</h4>
+                  <div className="space-y-4 border-l-2 border-[#5B54D9] pl-3">
+                    {/* Pull Request Comment Header */}
+                    <div className="flex items-center justify-between bg-[#0B0D11] p-3 rounded border border-white/[0.06]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-[#5B54D9] flex items-center justify-center text-white text-[10px] font-bold">
+                          AI
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-[#EDEFF2]">Gemini Sanjioner</span>
+                          <span className="text-[10px] text-[#8B94A3] ml-2">commented on PR</span>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-3xl font-black">{aiResult.score}</span>
-                        <span className="text-xs opacity-80">/10 pts</span>
+                      <div className="font-mono text-sm font-bold text-[#C9962C]">
+                        {aiResult.score} / 10
                       </div>
                     </div>
 
-                    {/* Button to Trigger Next Question Popup WHEN User is Ready */}
+                    {/* Verdict */}
+                    <div className="text-xs text-[#8B94A3] bg-[#0B0D11] p-3 rounded border border-white/[0.04]">
+                      <span className="font-bold text-[#EDEFF2]">Review Summary: </span>
+                      {aiResult.verdict}
+                    </div>
+
+                    {/* Next Question CTA */}
                     {aiResult.score >= 6 && (
                       <button
                         onClick={() => setIsSuccessModalOpen(true)}
-                        className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all animate-bounce"
+                        className="w-full py-2 rounded bg-[#2FAE79] text-[#0B0D11] font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
                       >
-                        🚀 Đã Xem Xong Nhận Xét! Sang Câu Tiếp Theo
+                        ✓ Review Passed — Sang câu tiếp theo
                       </button>
                     )}
 
                     {/* Strengths */}
-                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
-                      <h5 className="text-xs font-extrabold text-emerald-800 mb-2 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        Điểm mạnh bài làm:
+                    <div className="p-3 bg-[#0B0D11] border border-white/[0.04] rounded">
+                      <h5 className="text-xs font-bold text-[#2FAE79] mb-1.5 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Strengths:
                       </h5>
-                      <ul className="list-disc list-inside text-xs text-emerald-700 space-y-1 font-medium">
+                      <ul className="list-disc list-inside text-xs text-[#EDEFF2] space-y-1">
                         {aiResult.strengths.map((str, i) => (
                           <li key={i}>{str}</li>
                         ))}
@@ -583,12 +583,12 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                     </div>
 
                     {/* Weaknesses */}
-                    <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
-                      <h5 className="text-xs font-extrabold text-amber-900 mb-2 flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4 text-amber-600" />
-                        Điểm cần bổ sung / tối ưu:
+                    <div className="p-3 bg-[#0B0D11] border border-white/[0.04] rounded">
+                      <h5 className="text-xs font-bold text-[#C1553B] mb-1.5 flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        Suggested Improvements:
                       </h5>
-                      <ul className="list-disc list-inside text-xs text-amber-800 space-y-1 font-medium">
+                      <ul className="list-disc list-inside text-xs text-[#EDEFF2] space-y-1">
                         {aiResult.weaknesses.map((w, i) => (
                           <li key={i}>{w}</li>
                         ))}
@@ -596,16 +596,16 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                     </div>
 
                     {/* Senior Solution */}
-                    <div className="p-4 rounded-2xl bg-white border border-purple-200">
-                      <h5 className="text-xs font-extrabold text-purple-900 mb-2">Đáp án mẫu chuẩn Senior Principal:</h5>
-                      <div className="text-xs text-slate-700 leading-relaxed">
+                    <div className="p-3 bg-[#0B0D11] border border-white/[0.04] rounded">
+                      <h5 className="text-xs font-bold text-[#5B54D9] mb-2">Senior Best Practice Solution:</h5>
+                      <div className="text-xs text-[#EDEFF2] leading-relaxed">
                         <MarkdownRenderer content={aiResult.seniorBestPractice} />
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="py-12 text-center text-xs text-slate-500 font-medium">
-                    Hãy nhấn <span className="font-bold text-purple-600">"Gửi Gemini AI Sanjioner Chấm Bài"</span> để nhận phân tích chi tiết!
+                  <div className="py-12 text-center text-xs text-[#8B94A3]">
+                    Nhấn <span className="text-[#5B54D9] font-bold">"Gửi Gemini AI Sanjioner Chấm Bài"</span> để chạy Code Review.
                   </div>
                 )}
               </div>
@@ -613,61 +613,61 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
           </div>
         </div>
 
-        {/* Right Side: Monaco Code Editor & Test Terminal (Supports Fullscreen Mode) */}
+        {/* Right Side: Monaco Code Editor & Test Terminal */}
         <div
-          className={`bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden flex flex-col h-full shadow-md transition-all ${
+          className={`bg-[#0B0D11] rounded-lg border border-white/[0.06] overflow-hidden flex flex-col h-full transition-all ${
             isFullscreen
-              ? 'fixed inset-0 z-50 rounded-none border-none p-3 bg-slate-950'
+              ? 'fixed inset-0 z-50 rounded-none border-none p-3 bg-[#0B0D11]'
               : 'relative'
           }`}
         >
-          {/* Editor Header Bar (ULTRA COMPACT SINGLE-LINE NO CUTOFF DESIGN) */}
-          <div className="flex items-center justify-between bg-slate-950 px-3 py-1.5 border-b border-slate-800 gap-1.5">
+          {/* Editor Header Bar */}
+          <div className="flex items-center justify-between bg-[#161B22] px-3 py-2 border-b border-white/[0.06] gap-1.5 font-mono">
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#C1553B]/80"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#C9962C]/80"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#2FAE79]/80"></span>
+              <span className="text-xs text-[#8B94A3] ml-2">solution.js</span>
             </div>
 
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              {/* COMPACT FONT SIZE CONTROLS */}
-              <div className="h-7 flex items-center bg-slate-900 rounded-lg border border-slate-800 px-1 text-[11px] text-slate-400 flex-shrink-0">
+              {/* Font Size Controls */}
+              <div className="h-7 flex items-center bg-[#0B0D11] rounded border border-white/[0.06] px-1 text-[11px] text-[#8B94A3] flex-shrink-0">
                 <button
                   onClick={() => setFontSize((f) => Math.max(11, f - 1))}
-                  className="p-0.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="p-0.5 text-[#8B94A3] hover:text-[#EDEFF2] transition-colors cursor-pointer"
                   title="Giảm cỡ chữ"
                 >
                   <ZoomOut className="w-3 h-3" />
                 </button>
-                <span className="px-1 font-mono text-[10px] font-bold text-slate-300 whitespace-nowrap">{fontSize}px</span>
+                <span className="px-1 font-mono text-[10px] font-bold text-[#EDEFF2]">{fontSize}px</span>
                 <button
                   onClick={() => setFontSize((f) => Math.min(22, f + 1))}
-                  className="p-0.5 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="p-0.5 text-[#8B94A3] hover:text-[#EDEFF2] transition-colors cursor-pointer"
                   title="Tăng cỡ chữ"
                 >
                   <ZoomIn className="w-3 h-3" />
                 </button>
               </div>
 
-              {/* COMPACT PRETTIER FORMAT BUTTON */}
+              {/* Format Button */}
               <button
                 onClick={handleFormatCode}
-                className="h-7 whitespace-nowrap px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 hover:text-amber-200 text-xs font-bold transition-all border border-slate-700 flex items-center gap-1 flex-shrink-0 cursor-pointer"
-                title="Format định dạng code chuẩn Prettier"
+                className="h-7 whitespace-nowrap px-2 rounded bg-[#0B0D11] hover:bg-white/[0.04] text-[#C9962C] text-xs font-mono transition-colors border border-white/[0.06] flex items-center gap-1 flex-shrink-0 cursor-pointer"
+                title="Format code"
               >
-                {isFormattedSuccess ? <Check className="w-3 h-3 text-emerald-400" /> : <Wand2 className="w-3 h-3 text-amber-300" />}
+                {isFormattedSuccess ? <Check className="w-3 h-3 text-[#2FAE79]" /> : <Wand2 className="w-3 h-3 text-[#C9962C]" />}
                 <span>{isFormattedSuccess ? 'Đã Format' : 'Format'}</span>
               </button>
 
-              {/* COMPACT FULLSCREEN EXPAND / MINIMIZE BUTTON */}
+              {/* Fullscreen Button */}
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className={`h-7 whitespace-nowrap px-2 rounded-lg text-xs font-bold transition-all border flex items-center gap-1 flex-shrink-0 cursor-pointer ${
+                className={`h-7 whitespace-nowrap px-2 rounded text-xs font-mono transition-colors border flex items-center gap-1 flex-shrink-0 cursor-pointer ${
                   isFullscreen
-                    ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-500'
-                    : 'bg-slate-800 hover:bg-slate-700 text-sky-300 border-slate-700'
+                    ? 'bg-[#C1553B] text-[#EDEFF2] border-[#C1553B]'
+                    : 'bg-[#0B0D11] text-[#8B94A3] hover:text-[#EDEFF2] border-white/[0.06]'
                 }`}
-                title={isFullscreen ? 'Thu nhỏ khung code' : 'Phóng to toàn màn hình khung code'}
               >
                 {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
                 <span>{isFullscreen ? 'Thu Nhỏ' : 'Phóng To'}</span>
@@ -678,35 +678,53 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                   <button
                     onClick={handleEvaluateWithAI}
                     disabled={isAiLoading}
-                    className="h-7 whitespace-nowrap px-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold transition-all flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:opacity-50"
-                    title="Chấm code bằng Gemini AI"
+                    className="h-7 whitespace-nowrap px-2.5 rounded border border-[#5B54D9]/40 bg-[#5B54D9]/20 hover:bg-[#5B54D9]/30 text-[#EDEFF2] text-xs font-mono transition-colors flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:opacity-50"
                   >
-                    <Sparkles className="w-3 h-3 text-amber-300" />
+                    <Sparkles className="w-3 h-3 text-[#5B54D9]" />
                     <span>Chấm AI</span>
                   </button>
 
                   <button
                     onClick={handleRunTests}
                     disabled={isEvaluating}
-                    className="h-7 whitespace-nowrap px-3 rounded-lg bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white text-xs font-extrabold shadow-md shadow-pink-500/20 transition-all flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:opacity-50"
+                    className="h-7 whitespace-nowrap px-3 rounded border border-[#2FAE79] bg-[#2FAE79]/20 hover:bg-[#2FAE79]/40 text-[#2FAE79] text-xs font-mono font-bold transition-colors flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:opacity-50"
                   >
-                    {isEvaluating ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 fill-white" />}
-                    <span>Chạy Code</span>
+                    {isEvaluating ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 text-[#2FAE79] fill-current" />}
+                    <span>Chạy Test Code</span>
                   </button>
                 </>
               )}
             </div>
           </div>
 
-          {/* Monaco Editor Canvas with VS Code Extensions */}
+          {/* Monaco Editor Canvas */}
           <div className="flex-1 min-h-[220px] relative">
             <Editor
               height="100%"
               defaultLanguage="javascript"
-              theme="vs-dark"
+              theme="editor-noir"
               value={code}
               onMount={(editor, monaco) => {
                 editorRef.current = editor;
+                // Define Custom Editor Noir Theme
+                monaco.editor.defineTheme('editor-noir', {
+                  base: 'vs-dark',
+                  inherit: true,
+                  rules: [
+                    { token: 'comment', foreground: '8B94A3', fontStyle: 'italic' },
+                    { token: 'keyword', foreground: '5B54D9', fontStyle: 'bold' },
+                    { token: 'string', foreground: '2FAE79' },
+                    { token: 'number', foreground: 'C9962C' },
+                  ],
+                  colors: {
+                    'editor.background': '#0B0D11',
+                    'editor.foreground': '#EDEFF2',
+                    'editor.lineHighlightBackground': '#161B22',
+                    'editorCursor.foreground': '#C9962C',
+                    'editorIndentGuide.background': '#232A35',
+                  }
+                });
+                monaco.editor.setTheme('editor-noir');
                 registerMonacoSnippets(monaco);
               }}
               onChange={(v) => {
@@ -715,7 +733,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
               }}
               options={{
                 fontSize: fontSize,
-                fontFamily: "'Fira Code', 'JetBrains Mono', Consolas, monospace",
+                fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
                 fontLigatures: true,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
@@ -741,16 +759,16 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
           </div>
 
           {/* Test Runner Output Terminal */}
-          <div className="h-44 bg-slate-950 border-t border-slate-800 p-3 font-mono text-xs overflow-y-auto">
-            <div className="flex items-center justify-between text-slate-400 mb-2 pb-1 border-b border-slate-800">
+          <div className="h-44 bg-[#0B0D11] border-t border-white/[0.06] p-3 font-mono text-xs overflow-y-auto">
+            <div className="flex items-center justify-between text-[#8B94A3] mb-2 pb-1 border-b border-white/[0.04]">
               <span className="font-bold flex items-center gap-1">
-                <FileCode className="w-3.5 h-3.5 text-pink-400" />
-                Console Test Runner Output:
+                <FileCode className="w-3.5 h-3.5 text-[#C9962C]" />
+                Console Output (Git Diff Format):
               </span>
               {feedbackStatus === 'success' && (
-                <span className="text-emerald-400 font-extrabold flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  ĐÃ HOÀN THÀNH (+{question.points} pts)
+                <span className="text-[#2FAE79] font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2FAE79]" />
+                  PASSED (+{question.points} XP)
                 </span>
               )}
             </div>
@@ -760,20 +778,19 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 {testResults.map((tr, idx) => (
                   <div
                     key={idx}
-                    className={`flex items-center gap-2 ${tr.pass ? 'text-emerald-400 font-medium' : 'text-rose-400 font-medium'}`}
+                    className={`flex items-center gap-2 ${tr.pass ? 'text-[#2FAE79]' : 'text-[#C1553B]'}`}
                   >
-                    {tr.pass ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
                     <span>{tr.msg}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="space-y-1 text-slate-500">
+              <div className="space-y-1 text-[#8B94A3]">
                 {outputLogs.map((log, idx) => (
                   <div key={idx}>{log}</div>
                 ))}
                 {outputLogs.length === 0 && (
-                  <div>Nhấn "Chạy Code" hoặc "Chấm AI" để thực thi test suite...</div>
+                  <div>$ Press "Chạy Test Code" to execute test runner...</div>
                 )}
               </div>
             )}
