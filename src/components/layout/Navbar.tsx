@@ -15,10 +15,12 @@ import {
   Trophy,
   Crown,
   ShieldCheck,
+  Key,
 } from "lucide-react";
 import { UserProfile } from "../../types";
 import { apiService } from "../../services/apiService";
 import { EditProfileModal } from "../profile/EditProfileModal";
+import { ApiKeyModal } from "../shared/ApiKeyModal";
 
 interface NavbarProps {
   currentView: string;
@@ -44,6 +46,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isConnected = apiService.isBackendConnected();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [keyUpdateCount, setKeyUpdateCount] = useState(0);
+
+  const hasCustomKey = Boolean(
+    localStorage.getItem('fe_gemini_api_key') || localStorage.getItem('fe_openai_api_key')
+  );
 
   const isAdminOrOwner = profile.role === 'OWNER' || profile.role === 'ADMIN';
 
@@ -141,6 +149,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* 3. Right Actions Area */}
           <div className="flex items-center gap-2.5">
+            {!isLoggedIn && (
+              <button
+                onClick={onOpenAuthModal}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md shadow-purple-500/20 transition-all cursor-pointer animate-pulse"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Đăng Nhập</span>
+              </button>
+            )}
+
             {/* Quick Mock Interview Button */}
             <button
               onClick={onOpenMockInterview}
@@ -154,12 +172,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200/80 text-xs font-extrabold text-slate-700 shadow-xs">
               <span className="flex items-center gap-1 text-amber-600" title="Streak ngày học">
                 <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500 animate-pulse" />
-                {profile.streakCount}d
+                {isLoggedIn ? profile.streakCount : 0}d
               </span>
               <span className="text-slate-300">|</span>
               <span className="flex items-center gap-1 text-pink-600" title="Điểm kinh nghiệm">
                 <Star className="w-3.5 h-3.5 fill-pink-500 text-pink-500" />
-                {profile.totalPoints}
+                {isLoggedIn ? profile.totalPoints : 0}
               </span>
             </div>
 
@@ -171,8 +189,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 <div className="w-8 h-8 rounded-full ring-2 ring-pink-400/40 overflow-hidden flex-shrink-0">
                   <img
-                    src={profile.avatarUrl}
-                    alt={profile.fullName}
+                    src={isLoggedIn ? profile.avatarUrl : "https://api.dicebear.com/7.x/avataaars/svg?seed=guest"}
+                    alt={isLoggedIn ? profile.fullName : "Khách"}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -185,11 +203,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {/* Profile info header */}
                   <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 mb-1 space-y-1.5">
                     <p className="text-xs font-black text-slate-900 line-clamp-1">
-                      {profile.fullName}
+                      {isLoggedIn ? profile.fullName : "Khách (Chưa đăng nhập)"}
                     </p>
                     <div className="flex items-center justify-between text-[11px] text-slate-500">
                       <span>Role hiện tại:</span>
-                      <b className="text-amber-600 font-black">{profile.role || 'USER'}</b>
+                      <b className="text-amber-600 font-black">{isLoggedIn ? (profile.role || 'USER') : 'GUEST'}</b>
                     </div>
 
                     {/* Database API Connection indicator inside menu */}
@@ -232,6 +250,26 @@ export const Navbar: React.FC<NavbarProps> = ({
                   >
                     <Edit3 className="w-4 h-4 text-pink-600" />
                     Chỉnh Sửa Hồ Sơ & Tên
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsApiKeyModalOpen(true);
+                    }}
+                    className="w-full flex items-center justify-between p-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Key className="w-4 h-4 text-amber-500" />
+                      <span>Cấu Hình AI Key</span>
+                    </div>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold transition-all ${
+                      hasCustomKey 
+                        ? "bg-emerald-100 text-emerald-700 border border-emerald-200" 
+                        : "bg-amber-100 text-amber-700 border border-amber-200"
+                    }`}>
+                      {hasCustomKey ? "🟢 Đã cài Key" : "⚡ Mặc Định"}
+                    </span>
                   </button>
 
                   {!isLoggedIn ? (
@@ -345,6 +383,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         onClose={() => setIsEditModalOpen(false)}
         profile={profile}
         onProfileUpdated={onProfileUpdated}
+      />
+
+      {/* Api Key Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
+        onSaved={() => {
+          setKeyUpdateCount((prev) => prev + 1);
+        }}
       />
     </>
   );

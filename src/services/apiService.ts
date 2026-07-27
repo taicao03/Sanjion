@@ -359,9 +359,7 @@ export const apiService = {
       try {
         console.log('🟢 [API Mode]: Đang lưu tiến độ & điểm số mới lên Supabase Cloud -> user_progress');
         
-        const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(questionId);
-
-        if (isUuid) {
+        try {
           await supabase.from('user_progress').upsert({
             user_id: userId,
             question_id: questionId,
@@ -371,6 +369,8 @@ export const apiService = {
             solved_at: status === 'SOLVED' ? new Date().toISOString() : null,
             last_attempt_at: new Date().toISOString(),
           });
+        } catch (dbErr) {
+          console.warn('Upsert user_progress notice:', dbErr);
         }
 
         // Update profile points, streak & metadata on Supabase DB

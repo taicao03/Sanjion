@@ -32,6 +32,7 @@ import { RoadmapView } from './components/roadmap/RoadmapView';
 import { AiTutorWidget } from './components/ai/AiTutorWidget';
 import { AuthModal } from './components/auth/AuthModal';
 import { AdminDashboard } from './components/admin/AdminDashboard';
+import { TextSelectionToolbar } from './components/shared/TextSelectionToolbar';
 
 export function App() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'questions' | 'workspace' | 'bookmarks' | 'roadmap' | 'admin'>('roadmap');
@@ -245,6 +246,8 @@ export function App() {
             allQuestions={questions}
             onSelectQuestion={handleSelectQuestion}
             onGenerateNextWithAI={handleGenerateNextSameTopicSameDifficulty}
+            isLoggedIn={isLoggedIn}
+            onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />
         ) : currentView === 'admin' ? (
           /* Admin Dashboard & User Roles Management View */
@@ -471,6 +474,9 @@ export function App() {
         activeQuestion={activeQuestion}
         onOpenApiKeyModal={() => setIsGenerateModalOpen(true)}
       />
+
+      {/* Global Text Selection Pronunciation & Translation Toolbar */}
+      <TextSelectionToolbar />
     </div>
   );
 }

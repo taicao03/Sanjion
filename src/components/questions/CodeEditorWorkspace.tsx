@@ -28,6 +28,7 @@ import { aiService, AIEvaluationResult } from '../../services/aiService';
 import { ApiKeyModal } from '../shared/ApiKeyModal';
 import { SuccessNextQuestionModal } from './SuccessNextQuestionModal';
 import { MarkdownRenderer } from '../shared/MarkdownRenderer';
+import { registerMonacoSnippets } from '../../services/snippetProvider';
 import confetti from 'canvas-confetti';
 
 interface CodeEditorWorkspaceProps {
@@ -40,6 +41,8 @@ interface CodeEditorWorkspaceProps {
   allQuestions?: Question[];
   onSelectQuestion?: (q: Question) => void;
   onGenerateNextWithAI?: () => void;
+  isLoggedIn?: boolean;
+  onOpenAuthModal?: () => void;
 }
 
 export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
@@ -52,9 +55,11 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   allQuestions = [],
   onSelectQuestion,
   onGenerateNextWithAI,
+  isLoggedIn = false,
+  onOpenAuthModal,
 }) => {
   const [activeTab, setActiveTab] = useState<'problem' | 'explanation' | 'ai'>('problem');
-  const [code, setCode] = useState<string>(question.starterCode || '// Viết câu trả lời hoặc code của bạn tại đây\n');
+  const [code, setCode] = useState<string>(progress?.userAnswer || '');
   const [selectedQuizOption, setSelectedQuizOption] = useState<string | null>(null);
   const [theoryAnswerInput, setTheoryAnswerInput] = useState<string>(progress?.userAnswer || '');
 
@@ -80,7 +85,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    setCode(question.starterCode || '// Viết mã Sanjion tại đây\n');
+    setCode(progress?.userAnswer || '');
     setSelectedQuizOption(null);
     setTheoryAnswerInput(progress?.userAnswer || '');
     setOutputLogs([]);
@@ -175,6 +180,11 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   const handleRunTests = () => {
     setValidationError(null);
 
+    if (!isLoggedIn) {
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
+
     if (!code || code.trim().length === 0) {
       setValidationError('⚠️ Vui lòng viết mã giải thuật trước khi bấm Chạy Code!');
       return;
@@ -244,6 +254,11 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   const handleSubmitQuiz = () => {
     setValidationError(null);
 
+    if (!isLoggedIn) {
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
+
     if (!selectedQuizOption || !question.options) {
       setValidationError('⚠️ Vui lòng chọn 1 đáp án trước khi nộp bài!');
       return;
@@ -265,6 +280,11 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   const handleSubmitTheory = () => {
     setValidationError(null);
 
+    if (!isLoggedIn) {
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
+
     if (!theoryAnswerInput || theoryAnswerInput.trim().length < 20) {
       setValidationError('⚠️ Vui lòng nhập tối thiểu 20 ký tự giải thích chi tiết trước khi hoàn thành bài tập!');
       return;
@@ -279,6 +299,12 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   // AI Evaluation Trigger (PERSISTS AI Tab State!)
   const handleEvaluateWithAI = async () => {
     setValidationError(null);
+
+    if (!isLoggedIn) {
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
+
     const answerToEvaluate = question.type === 'CODING_PRACTICE' ? code : theoryAnswerInput;
 
     if (!answerToEvaluate || answerToEvaluate.trim().length < 10) {
@@ -679,8 +705,9 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
               defaultLanguage="javascript"
               theme="vs-dark"
               value={code}
-              onMount={(editor) => {
+              onMount={(editor, monaco) => {
                 editorRef.current = editor;
+                registerMonacoSnippets(monaco);
               }}
               onChange={(v) => {
                 setCode(v || '');
@@ -702,6 +729,13 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 autoClosingBrackets: 'always',
                 autoClosingQuotes: 'always',
                 folding: true,
+                quickSuggestions: { other: true, comments: true, strings: true },
+                snippetSuggestions: 'top',
+                suggestOnTriggerCharacters: true,
+                tabCompletion: 'on',
+                acceptSuggestionOnEnter: 'on',
+                wordBasedSuggestions: 'allDocuments',
+                parameterHints: { enabled: true },
               }}
             />
           </div>

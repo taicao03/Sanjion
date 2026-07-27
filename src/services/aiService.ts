@@ -419,7 +419,7 @@ YÊU CẦU BẮT BUỘC CHO BÀI LÝ THUYẾT (THEORY):
 YÊU CẦU BẮT BUỘC CHO BÀI THỰC HÀNH CODING (CODING_PRACTICE):
 1. BẮT BUỘC trả về "starterCode" chứa khung hàm và mảng "testCases" chứa các câu lệnh kiểm thử tự động.
 2. TUYỆT ĐỐI KHÔNG TRẢ VỀ mảng "options"!
-3. CỰC KỲ QUAN TRỌNG VỀ "starterCode": "starterCode" BẮT BUỘC CHỈ LÀ KHUNG HÀM RỖNG CHƯA CÓ LỜI GIẢI (chứa comment // TODO: Viết mã nguồn giải quyết bài tập tại đây...). TUYỆT ĐỐI KHÔNG ĐƯỢC ĐƯA ĐÁP ÁN HOẶC TOÀN BỘ CODE ĐÃ GIẢI VÀO "starterCode" (lời giải đầy đủ chỉ nằm trong "explanation")!
+3. CỰC KỲ QUAN TRỌNG VỀ "starterCode": "starterCode" BẮT BUỘC ĐỂ TRỐNG HOÀN TOÀN ("") KHÔNG ĐƯỢC CHỨA BẤT KỲ MÃ NGUỒN HAY LỜI GIẢI NÀO (lời giải đầy đủ chỉ nằm trong "explanation")!
 `
     }[type];
 

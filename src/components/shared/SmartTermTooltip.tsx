@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, BookOpen, MessageSquare } from 'lucide-react';
+import { Sparkles, BookOpen, MessageSquare, Volume2, Languages, Loader2 } from 'lucide-react';
 import { TermDefinition, findTermDefinition } from '../../services/termDictionary';
+import { speechService } from '../../services/speechService';
+import { translationService } from '../../services/translationService';
 
 interface SmartTermTooltipProps {
   termText: string;
@@ -15,6 +17,10 @@ export const SmartTermTooltip: React.FC<SmartTermTooltipProps> = ({
   children,
 }) => {
   const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
+  const [translationText, setTranslationText] = useState<string | null>(null);
+
   const [coords, setCoords] = useState<{ top: number; left: number; placeBelow: boolean }>({
     top: 0,
     left: 0,
@@ -59,6 +65,25 @@ export const SmartTermTooltip: React.FC<SmartTermTooltipProps> = ({
     timeoutRef.current = setTimeout(() => {
       setIsHovered(false);
     }, 200);
+  };
+
+  const handleSpeak = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSpeaking(true);
+    speechService.speak(def.title, 'en-US');
+    setTimeout(() => setIsSpeaking(false), 1500);
+  };
+
+  const handleTranslate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (translationText) {
+      setTranslationText(null); // Toggle hide
+      return;
+    }
+    setIsTranslating(true);
+    const res = await translationService.translateToVietnamese(def.title);
+    setTranslationText(res);
+    setIsTranslating(false);
   };
 
   const handleAskAIAboutTerm = (e: React.MouseEvent) => {
@@ -108,12 +133,22 @@ export const SmartTermTooltip: React.FC<SmartTermTooltipProps> = ({
               <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-8 border-transparent border-t-slate-900/95 pointer-events-none block" />
             )}
 
-            {/* Header */}
+            {/* Header with Pronunciation Speaker */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-700/80 pb-2">
               <div className="flex items-center gap-1.5 font-extrabold text-pink-300 truncate">
                 <BookOpen className="w-3.5 h-3.5 flex-shrink-0 text-pink-400" />
                 <span className="truncate">{def.title}</span>
+                <button
+                  onClick={handleSpeak}
+                  className={`p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer ${
+                    isSpeaking ? 'text-amber-400 animate-pulse' : 'text-slate-300 hover:text-white'
+                  }`}
+                  title="🔊 Nghe phát âm tiếng Anh (Web Speech API)"
+                >
+                  <Volume2 className="w-3.5 h-3.5" />
+                </button>
               </div>
+
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${
                   def.level === 'Junior'
@@ -134,17 +169,39 @@ export const SmartTermTooltip: React.FC<SmartTermTooltipProps> = ({
               <p className="font-medium">{def.simpleExplanation}</p>
             </div>
 
+            {/* Translation Box if active */}
+            {translationText && (
+              <div className="bg-purple-950/80 border border-purple-500/40 p-2.5 rounded-xl text-[11px] text-purple-200 leading-relaxed space-y-1 animate-fadeIn">
+                <div className="flex items-center gap-1 font-bold text-purple-300 text-[10px]">
+                  <Languages className="w-3 h-3 text-pink-400" />
+                  <span>Bản Dịch Tiếng Việt:</span>
+                </div>
+                <p>{translationText}</p>
+              </div>
+            )}
+
             {/* Analogy / Example */}
             <div className="bg-slate-800/80 border border-slate-700 p-2 rounded-xl text-[11px] text-amber-200 leading-normal">
               {def.analogyOrExample}
             </div>
 
-            {/* Footer Action: Ask AI */}
-            <div className="pt-1 flex items-center justify-between border-t border-slate-800">
-              <span className="text-[10px] text-slate-400">💡 Hover xem lý thuyết</span>
+            {/* Footer Action Controls: Pronounce, Translate & Ask AI */}
+            <div className="pt-1 flex items-center justify-between border-t border-slate-800 gap-1.5">
+              <button
+                onClick={handleTranslate}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-pink-300 font-bold text-[10px] border border-slate-700 transition-all cursor-pointer"
+              >
+                {isTranslating ? (
+                  <Loader2 className="w-3 h-3 animate-spin text-pink-400" />
+                ) : (
+                  <Languages className="w-3 h-3 text-pink-400" />
+                )}
+                <span>{translationText ? 'Ẩn Dịch' : '🇻🇳 Dịch Tiếng Việt'}</span>
+              </button>
+
               <button
                 onClick={handleAskAIAboutTerm}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold text-[10px] shadow-sm transition-all"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold text-[10px] shadow-sm transition-all cursor-pointer"
               >
                 <MessageSquare className="w-3 h-3" /> Hỏi AI Chi Tiết
               </button>
