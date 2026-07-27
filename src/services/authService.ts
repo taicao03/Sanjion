@@ -264,10 +264,11 @@ export const authService = {
     storageService.clearAllData();
 
     if (isSupabaseConfigured && supabase) {
+      const redirectUrl = (import.meta as any).env?.VITE_SITE_URL || window.location.origin;
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: redirectUrl,
         },
       });
 
