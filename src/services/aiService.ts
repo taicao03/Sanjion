@@ -205,10 +205,24 @@ export const aiService = {
     return data.choices?.[0]?.message?.content || '';
   },
 
+  // Helper to split and clean any single or comma-separated API key string
+  cleanKeyArray(rawKeys?: string | string[]): string[] {
+    if (!rawKeys) return [];
+    const list = Array.isArray(rawKeys) ? rawKeys : rawKeys.split(',');
+    return Array.from(new Set(list.map(k => k.trim()).filter(Boolean)));
+  },
+
   // Key & Model Failover Rotation
   async callAIWithRotation(prompt: string, customApiKey?: string): Promise<string> {
-    const geminiKeys = customApiKey ? [customApiKey] : this.getGeminiKeys();
-    const openAIKeys = this.getOpenAIKeys();
+    const parsedCustom = customApiKey ? this.cleanKeyArray(customApiKey) : [];
+
+    const geminiKeys = parsedCustom.length > 0
+      ? parsedCustom.filter(k => !k.startsWith('sk-'))
+      : this.getGeminiKeys();
+
+    const openAIKeys = parsedCustom.length > 0
+      ? parsedCustom.filter(k => k.startsWith('sk-'))
+      : this.getOpenAIKeys();
 
     if (geminiKeys.length === 0 && openAIKeys.length === 0) {
       throw new Error('MISSING_API_KEY: Chưa cấu hình Gemini API Key hoặc OpenAI Key.');
