@@ -61,6 +61,26 @@ export const authService = {
       const mergedProgressMap = { ...localUserProgress, ...dbProgressMap };
       storageService.setAllProgress(mergedProgressMap, user.id);
 
+      // Sync merged progress back to Supabase user_progress table
+      if (user.id && isSupabaseConfigured && supabase) {
+        const progressEntries = Object.values(mergedProgressMap);
+        for (const item of progressEntries) {
+          try {
+            await supabase.from('user_progress').upsert({
+              user_id: user.id,
+              question_id: item.questionId,
+              status: item.status,
+              score: item.score || 0,
+              user_answer: item.userAnswer || '',
+              solved_at: item.solvedAt || new Date().toISOString(),
+              last_attempt_at: item.lastAttemptAt || new Date().toISOString(),
+            });
+          } catch (syncErr) {
+            console.warn('Sync progress item error:', syncErr);
+          }
+        }
+      }
+
       let totalSolvedPoints = 0;
       Object.values(mergedProgressMap).forEach((item) => {
         if (item.status === 'SOLVED') {
@@ -260,9 +280,6 @@ export const authService = {
 
   // Login with OAuth (Google / GitHub)
   async loginWithOAuth(provider: 'google' | 'github') {
-    // Clear previous user data before OAuth login
-    storageService.clearAllData();
-
     if (isSupabaseConfigured && supabase) {
       const redirectUrl = (import.meta as any).env?.VITE_SITE_URL || window.location.origin;
       const { data, error } = await supabase.auth.signInWithOAuth({
