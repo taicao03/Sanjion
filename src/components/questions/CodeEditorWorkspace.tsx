@@ -22,6 +22,7 @@ import {
   Minimize2,
   ZoomIn,
   ZoomOut,
+  Code2,
   BookOpen,
   MessageSquare,
   Flame,
@@ -92,9 +93,11 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   >("idle");
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Editor View Controls & Fullscreen State
+  // Editor View Controls, Language Selection & Fullscreen State
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [fontSize, setFontSize] = useState<number>(13);
+  const [selectedLanguage, setSelectedLanguage] = useState<'javascript' | 'typescript' | 'react' | 'css' | 'html'>('typescript');
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState<boolean>(false);
   const [isFormattedSuccess, setIsFormattedSuccess] = useState<boolean>(false);
   const editorRef = useRef<any>(null);
 
@@ -888,6 +891,59 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Language Selector Dropdown */}
+              <div className="relative inline-block text-left font-mono">
+                <button
+                  type="button"
+                  onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                  className="h-7 px-2 rounded bg-[#0B0D11] hover:bg-white/[0.06] text-[#C9962C] text-xs font-bold font-mono transition-all border border-[#C9962C]/40 flex items-center gap-1 cursor-pointer shadow-sm"
+                  title="Chọn ngôn ngữ lập trình (JS / TS / React / CSS / HTML)"
+                >
+                  <Code2 className="w-3.5 h-3.5 text-[#C9962C]" />
+                  <span className="uppercase font-mono font-black text-[11px]">
+                    {selectedLanguage === 'javascript'
+                      ? 'JS'
+                      : selectedLanguage === 'typescript'
+                      ? 'TS'
+                      : selectedLanguage === 'react'
+                      ? 'React TSX'
+                      : selectedLanguage === 'css'
+                      ? 'CSS'
+                      : 'HTML'}
+                  </span>
+                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isLangDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
+                </button>
+
+                {isLangDropdownOpen && (
+                  <div className="absolute left-0 mt-1.5 w-44 rounded-xl bg-[#161B22] border border-white/10 shadow-2xl p-1 z-50 animate-fadeIn space-y-0.5 text-xs font-mono">
+                    {[
+                      { id: 'typescript', label: '🔷 TypeScript (TS)', lang: 'typescript' },
+                      { id: 'javascript', label: '⚡ JavaScript (JS)', lang: 'javascript' },
+                      { id: 'react', label: '⚛️ React (TSX)', lang: 'typescript' },
+                      { id: 'css', label: '🎨 CSS', lang: 'css' },
+                      { id: 'html', label: '🌐 HTML', lang: 'html' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedLanguage(item.id as any);
+                          setIsLangDropdownOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left font-bold transition-all cursor-pointer ${
+                          selectedLanguage === item.id
+                            ? 'bg-purple-600/20 text-amber-300 border border-purple-500/40'
+                            : 'text-slate-300 hover:bg-[#232A35] hover:text-white'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        {selectedLanguage === item.id && <Check className="w-3 h-3 text-amber-300" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Font Size Controls */}
               <div className="h-7 flex items-center bg-[#0B0D11] rounded border border-white/[0.06] px-1 text-[11px] text-[#8B94A3] flex-shrink-0">
                 <button
@@ -972,7 +1028,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
           <div className="flex-1 min-h-[220px] relative">
             <Editor
               height="100%"
-              defaultLanguage="javascript"
+              language={selectedLanguage === 'react' ? 'typescript' : selectedLanguage}
               theme="editor-noir"
               value={code}
               onMount={(editor, monaco) => {
