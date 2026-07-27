@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { aiService } from '../../services/aiService';
 import { Question } from '../../types';
+import { MarkdownRenderer } from '../shared/MarkdownRenderer';
 
 interface AiTutorWidgetProps {
   activeQuestion?: Question | null;
@@ -207,21 +208,21 @@ export function AiTutorWidget({
         </button>
       </div>
 
-      {/* Chat Window Panel */}
+      {/* Chat Window Panel — Editor Noir Dark Aesthetic */}
       {isOpen && (
-        <div className="fixed xl:bottom-24 bottom-32 right-4 sm:right-6 z-50 w-[92vw] sm:w-[440px] h-[580px] max-h-[75vh] bg-white/95 backdrop-blur-2xl border border-pink-200/80 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slideUp">
+        <div className="fixed xl:bottom-24 bottom-32 right-4 sm:right-6 z-50 w-[92vw] sm:w-[460px] h-[600px] max-h-[80vh] bg-[#161B22] border border-white/10 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slideUp font-mono text-[#EDEFF2]">
           {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-purple-700 via-pink-600 to-rose-600 text-white flex items-center justify-between shadow-md">
+          <div className="p-4 bg-gradient-to-r from-[#0B0D11] via-[#161B22] to-[#0B0D11] text-white flex items-center justify-between border-b border-white/10 shadow-md">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+              <div className="p-2 bg-purple-500/20 text-purple-400 rounded-xl border border-purple-500/40">
                 <Bot className="w-6 h-6 text-amber-300" />
               </div>
               <div>
-                <h3 className="font-extrabold text-sm flex items-center gap-1.5">
+                <h3 className="font-extrabold text-sm flex items-center gap-1.5 text-white font-sans">
                   Sanjion AI Tutor <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 </h3>
-                <p className="text-[11px] text-pink-100">
-                  Mô hình: <span className="font-semibold text-white">{aiService.getActiveModelName()}</span>
+                <p className="text-[11px] text-slate-400 font-mono">
+                  Engine: <span className="font-semibold text-amber-300">{aiService.getActiveModelName()}</span>
                 </p>
               </div>
             </div>
@@ -231,14 +232,14 @@ export function AiTutorWidget({
                 <button
                   onClick={onOpenApiKeyModal}
                   title="Cấu hình API Key"
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors text-pink-100 hover:text-white"
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-300 hover:text-white"
                 >
-                  <Key className="w-4 h-4" />
+                  <Key className="w-4 h-4 text-amber-400" />
                 </button>
               )}
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors text-white"
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-300 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -246,65 +247,69 @@ export function AiTutorWidget({
           </div>
 
           {/* Quick Action Chips */}
-          <div className="p-2.5 bg-purple-50/60 border-b border-purple-100 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <div className="p-2.5 bg-[#0B0D11] border-b border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar font-mono text-xs">
             <button
               onClick={() => handleQuickAction('hint')}
               disabled={isLoading}
-              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-amber-200 text-amber-800 text-xs font-bold shadow-sm hover:bg-amber-50 disabled:opacity-50 transition-all"
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#161B22] border border-amber-500/40 text-amber-300 text-xs font-bold shadow-sm hover:bg-[#232A35] disabled:opacity-50 transition-all cursor-pointer"
             >
-              <Lightbulb className="w-3.5 h-3.5 text-amber-500" /> Xin Gợi Ý Hint
+              <Lightbulb className="w-3.5 h-3.5 text-amber-400" /> Xin Gợi Ý Hint
             </button>
             <button
               onClick={() => handleQuickAction('explain')}
               disabled={isLoading}
-              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-indigo-200 text-indigo-800 text-xs font-bold shadow-sm hover:bg-indigo-50 disabled:opacity-50 transition-all"
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#161B22] border border-purple-500/40 text-purple-300 text-xs font-bold shadow-sm hover:bg-[#232A35] disabled:opacity-50 transition-all cursor-pointer"
             >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-500" /> AI Giảng Bài Dễ Hiểu
+              <BookOpen className="w-3.5 h-3.5 text-purple-400" /> AI Giảng Bài Dễ Hiểu
             </button>
             <button
               onClick={() => handleQuickAction('review')}
               disabled={isLoading}
-              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-purple-200 text-purple-800 text-xs font-bold shadow-sm hover:bg-purple-50 disabled:opacity-50 transition-all"
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#161B22] border border-pink-500/40 text-pink-300 text-xs font-bold shadow-sm hover:bg-[#232A35] disabled:opacity-50 transition-all cursor-pointer"
             >
-              <Code2 className="w-3.5 h-3.5 text-purple-500" /> Senior Code Review
+              <Code2 className="w-3.5 h-3.5 text-pink-400" /> Senior Code Review
             </button>
           </div>
 
           {/* Active Context Banner if question is selected */}
           {activeQuestion && (
-            <div className="px-4 py-2 bg-slate-50 border-b border-slate-200/60 text-xs text-slate-600 flex items-center justify-between">
+            <div className="px-4 py-2 bg-[#0B0D11] border-b border-white/10 text-xs text-slate-300 flex items-center justify-between font-mono">
               <span className="truncate">
-                📍 Đang làm: <b className="text-slate-800">{activeQuestion.title}</b>
+                📍 Đang làm: <b className="text-amber-300 font-sans">{activeQuestion.title}</b>
               </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-pink-100 text-pink-700">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
                 {activeQuestion.difficulty}
               </span>
             </div>
           )}
 
           {/* Messages Area */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gradient-to-b from-white to-rose-50/30">
+          <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#0B0D11]">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.sender === 'ai' && (
-                  <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-md">
+                  <div className="w-8 h-8 rounded-xl bg-purple-600/30 border border-purple-500/40 text-purple-300 flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-md">
                     AI
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[84%] rounded-2xl p-3.5 text-xs md:text-sm leading-relaxed shadow-sm ${
+                  className={`max-w-[86%] rounded-2xl p-3.5 text-xs md:text-sm leading-relaxed shadow-sm ${
                     msg.sender === 'user'
-                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-br-none'
-                      : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none prose prose-sm max-w-none'
+                      ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white rounded-br-none font-medium'
+                      : 'bg-[#161B22] border border-white/10 text-[#EDEFF2] rounded-bl-none font-sans'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap font-sans">{msg.text}</div>
+                  {msg.sender === 'ai' ? (
+                    <MarkdownRenderer content={msg.text} />
+                  ) : (
+                    <div className="whitespace-pre-wrap font-sans text-white">{msg.text}</div>
+                  )}
                   <div
-                    className={`text-[10px] mt-1.5 text-right ${
+                    className={`text-[10px] mt-2 text-right font-mono ${
                       msg.sender === 'user' ? 'text-pink-200' : 'text-slate-400'
                     }`}
                   >
@@ -315,21 +320,21 @@ export function AiTutorWidget({
             ))}
 
             {isLoading && (
-              <div className="flex gap-3 items-center text-slate-500 text-xs italic">
-                <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 animate-pulse">
+              <div className="flex gap-3 items-center text-slate-400 text-xs italic font-mono">
+                <div className="w-8 h-8 rounded-xl bg-purple-600/30 border border-purple-500/40 text-purple-300 flex items-center justify-center font-bold text-xs flex-shrink-0 animate-pulse">
                   AI
                 </div>
-                <div className="bg-white border border-slate-200 rounded-2xl px-4 py-2.5 flex items-center gap-2 shadow-sm">
-                  <RefreshCw className="w-4 h-4 text-purple-600 animate-spin" />
-                  <span>Sanjion AI Tutor đang suy nghĩ bài giải...</span>
+                <div className="bg-[#161B22] border border-white/10 rounded-2xl px-4 py-2.5 flex items-center gap-2 shadow-sm text-amber-300">
+                  <RefreshCw className="w-4 h-4 text-amber-400 animate-spin" />
+                  <span>Sanjion AI Tutor đang phân tích & soạn bài giảng...</span>
                 </div>
               </div>
             )}
             <div ref={chatEndRef} />
           </div>
 
-          {/* Input Footer */}
-          <div className="p-3 bg-white border-t border-slate-200">
+          {/* Input Footer — High Contrast Input Box */}
+          <div className="p-3 bg-[#161B22] border-t border-white/10 font-mono">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -341,15 +346,15 @@ export function AiTutorWidget({
                 type="text"
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}
-                placeholder="Đặt câu hỏi thắc mắc cho Trợ Lý AI..."
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-slate-50"
+                placeholder="Nhập câu hỏi thắc mắc cho Trợ Lý AI..."
+                className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-[#0B0D11] text-[#EDEFF2] text-xs md:text-sm font-medium placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent font-sans"
               />
               <button
                 type="submit"
                 disabled={isLoading || !inputQuery.trim()}
-                className="p-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-md disabled:opacity-50 transition-all"
+                className="p-2.5 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:from-purple-700 hover:to-pink-700 text-white shadow-md disabled:opacity-50 transition-all cursor-pointer flex-shrink-0"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4 text-white" />
               </button>
             </form>
           </div>
