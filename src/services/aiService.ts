@@ -16,11 +16,11 @@ export const aiService = {
     const metaEnv = (import.meta as any).env;
     const envModels = (metaEnv && metaEnv.VITE_GEMINI_MODELS) ? metaEnv.VITE_GEMINI_MODELS.split(',') : [];
     const defaultModels = [
+      'gemini-3.6-flash',
+      'gemini-2.0-flash',
       'gemini-2.5-flash-lite',
       'gemini-2.5-flash',
       'gemini-1.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-pro'
     ];
     const combined = [...envModels, ...defaultModels].map(m => m.trim()).filter(Boolean);
     return Array.from(new Set(combined));
@@ -35,7 +35,7 @@ export const aiService = {
   // ✨ Get Active Model Name currently configured or selected ✨
   getActiveModelName(): string {
     const selected = localStorage.getItem('fe_selected_ai_model');
-    if (selected) return selected;
+    if (selected && selected !== 'gemini-2.5-flash' && selected !== 'gemini-2.5-flash-lite') return selected;
     const geminiModels = this.getGeminiModels();
     if (geminiModels.length > 0) {
       return geminiModels[0];
@@ -56,14 +56,14 @@ export const aiService = {
   getCustomModelsList(): string[] {
     try {
       const saved = localStorage.getItem('fe_custom_ai_models');
-      const baseModels = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-pro', 'gpt-4o-mini'];
+      const baseModels = ['gemini-3.6-flash', 'gemini-2.0-flash', 'gpt-4o-mini'];
       if (saved) {
         const parsed = JSON.parse(saved);
         return Array.from(new Set([...parsed, ...baseModels]));
       }
       return baseModels;
     } catch (e) {
-      return ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-1.5-pro', 'gpt-4o-mini'];
+      return ['gemini-3.6-flash', 'gemini-2.0-flash', 'gpt-4o-mini'];
     }
   },
 
