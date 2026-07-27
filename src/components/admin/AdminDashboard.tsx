@@ -152,6 +152,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Popup confirmation delete user
   const [userToDelete, setUserToDelete] = useState<AdminUserItem | null>(null);
+  
+  // Permission Error Custom Popup Modal State
+  const [permissionErrorMsg, setPermissionErrorMsg] = useState<string | null>(null);
 
   // AI Configuration States
   const [selectedAiModel, setSelectedAiModel] = useState<string>(aiService.getSelectedModel());
@@ -256,7 +259,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setRoleChangePending(null);
       await loadUsers();
     } else {
-      alert('⚠️ Bạn không có đủ quyền thực hiện thao tác phân quyền này!');
+      setPermissionErrorMsg('⚠️ Bạn không có đủ quyền thực hiện thao tác phân quyền này!');
       setRoleChangePending(null);
     }
   };
@@ -270,7 +273,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
       await loadUsers();
     } else {
-      alert('⚠️ Bạn không có đủ quyền thực hiện thao tác này!');
+      setPermissionErrorMsg('⚠️ Bạn không có đủ quyền thực hiện khóa/mở khóa tài khoản người dùng này!');
     }
   };
 
@@ -284,7 +287,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setUserToDelete(null);
       await loadUsers();
     } else {
-      alert('⚠️ Bạn không có đủ quyền xóa người dùng này khỏi hệ thống!');
+      setPermissionErrorMsg('⚠️ Bạn không có đủ quyền xóa người dùng này khỏi hệ thống!');
       setUserToDelete(null);
     }
   };
@@ -385,7 +388,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const githubCount = usersList.filter(u => u.provider === 'github' || u.email?.includes('github')).length;
   const emailCount = usersList.length - googleCount - githubCount;
 
-  const isModalOpen = Boolean(roleChangePending || userToDelete || isAddUserModalOpen);
+  const isModalOpen = Boolean(roleChangePending || userToDelete || isAddUserModalOpen || permissionErrorMsg);
 
   useEffect(() => {
     if (isModalOpen) {
@@ -1437,6 +1440,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               >
                 <Check className="w-4 h-4" />
                 Xác Nhận Cấp Quyền Ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP: PERMISSION DENIED CUSTOM MODAL */}
+      {permissionErrorMsg && (
+        <div className="fixed inset-0 z-[999999] overflow-y-auto bg-slate-950/85 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn font-mono">
+          <div className="bg-[#161B22] rounded-3xl shadow-2xl border border-rose-500/50 max-w-md w-full p-6 space-y-5 my-auto max-h-[90vh] overflow-y-auto animate-scaleUp text-white relative">
+            
+            <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+              <div className="p-3 bg-rose-500/20 text-rose-400 rounded-2xl border border-rose-500/40">
+                <AlertCircle className="w-6 h-6 text-rose-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white font-sans">Từ Chối Quyền Thao Tác</h3>
+                <p className="text-xs text-slate-400 font-sans">Quyền hạn tài khoản của bạn không đủ để thực hiện.</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-rose-500/10 rounded-2xl border border-rose-500/30 text-rose-200 text-xs font-bold font-sans leading-relaxed flex items-start gap-2.5">
+              <span className="text-amber-400 text-sm font-bold">⚠️</span>
+              <span>{permissionErrorMsg}</span>
+            </div>
+
+            <div className="flex items-center justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setPermissionErrorMsg(null)}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-pink-600 to-amber-500 hover:from-rose-700 hover:to-pink-700 text-white font-black text-xs shadow-lg shadow-rose-600/20 cursor-pointer"
+              >
+                Đã Hiểu & Đóng
               </button>
             </div>
           </div>

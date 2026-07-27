@@ -17,6 +17,7 @@ import { Category, Question, UserProfile, UserProgress } from "./types";
 import { apiService } from "./services/apiService";
 import { storageService } from "./services/storageService";
 import { authService } from "./services/authService";
+import { adminService } from "./services/adminService";
 import { aiService } from "./services/aiService";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 
@@ -78,6 +79,32 @@ export function App() {
     useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [adminAccessDeniedNotice, setAdminAccessDeniedNotice] = useState<string | null>(null);
+
+  // Check if current user is BLOCKED
+  const isCurrentUserBlocked = Boolean(
+    adminService.isUserBlocked(profile.id) ||
+    adminService.isUserBlocked(profile.username) ||
+    (profile.email && adminService.isUserBlocked(profile.email))
+  );
+
+  // Automatic Access Control Check for Admin View
+  useEffect(() => {
+    if (currentView === "admin") {
+      if (profile.role !== "OWNER" && profile.role !== "ADMIN") {
+        setCurrentView("roadmap");
+        setAdminAccessDeniedNotice("⚠️ Bạn không có quyền truy cập Trang Quản Trị Admin! Quyền hạn yêu cầu: ADMIN hoặc OWNER.");
+        setTimeout(() => setAdminAccessDeniedNotice(null), 5000);
+      }
+    }
+  }, [currentView, profile]);
+
+  // Lock body scroll if user is BLOCKED
+  useEffect(() => {
+    if (isCurrentUserBlocked) {
+      document.body.style.overflow = "hidden";
+    }
+  }, [isCurrentUserBlocked]);
 
   // ✨ DIRECT AI GENERATION STATES FOR SAME TOPIC & DIFFICULTY ✨
   const [isDirectAiGenerating, setIsDirectAiGenerating] =
@@ -556,6 +583,73 @@ export function App() {
         categories={categories}
         onQuestionGenerated={handleQuestionGenerated}
       />
+
+      {/* ADMIN ACCESS DENIED NOTIFICATION BANNER */}
+      {adminAccessDeniedNotice && (
+        <div className="fixed bottom-6 right-6 z-[99999] bg-[#161B22] border border-amber-500/50 text-amber-300 px-5 py-4 rounded-2xl shadow-2xl font-mono text-xs font-bold flex items-center gap-3 animate-slideUp">
+          <span className="text-base">⚠️</span>
+          <span>{adminAccessDeniedNotice}</span>
+          <button onClick={() => setAdminAccessDeniedNotice(null)} className="text-slate-400 hover:text-white ml-2">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* FULL-SCREEN OVERLAY MODAL FOR BLOCKED USERS */}
+      {isCurrentUserBlocked && (
+        <div className="fixed inset-0 z-[999999] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-fadeIn font-mono">
+          <div className="bg-[#161B22] rounded-3xl shadow-2xl border border-amber-500/50 max-w-lg w-full p-8 space-y-6 text-white text-center relative animate-scaleUp">
+            
+            <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mx-auto shadow-lg shadow-amber-500/20">
+              <span className="text-3xl font-black">🔒</span>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-white font-sans">
+                Tài Khoản Đã Bị Khóa (BLOCKED)
+              </h3>
+              <p className="text-xs text-amber-300 font-bold bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full inline-block">
+                Trạng Thái: Dừng Hoạt Động
+              </p>
+            </div>
+
+            <div className="p-4 bg-[#0B0D11] rounded-2xl border border-white/10 flex items-center gap-3 text-left">
+              <img
+                src={profile.avatarUrl}
+                alt={profile.fullName}
+                className="w-12 h-12 rounded-full object-cover ring-2 ring-amber-500/40"
+              />
+              <div>
+                <p className="font-bold text-white text-sm font-sans">{profile.fullName}</p>
+                <p className="text-xs text-slate-400">@{profile.username} · {profile.email}</p>
+                <span className="text-[10px] font-extrabold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded mt-1 inline-block">
+                  Role: {profile.role || 'USER'}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed font-sans font-medium text-left">
+              ⚠️ Rất tiếc, tài khoản của bạn đã bị Quản Trị Viên tạm thời <strong>khóa (BLOCKED)</strong>. Trong thời gian bị khóa, bạn không thể làm bài tập, tích lũy điểm XP hoặc truy cập trang quản trị. Vui lòng liên hệ Admin để được hỗ trợ mở lại tài khoản.
+            </p>
+
+            <div className="pt-2 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  authService.logout();
+                  setIsLoggedIn(false);
+                  storageService.clearAllData();
+                  setProfile(storageService.getProfile());
+                  window.location.reload();
+                }}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-600 via-rose-600 to-purple-600 hover:from-amber-700 hover:to-purple-700 text-white font-black text-xs shadow-xl shadow-amber-500/20 cursor-pointer"
+              >
+                Đăng Xuất Tài Khoản Ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating AI Tutor Assistant Widget (Accessible Anywhere 24/7) */}
       <AiTutorWidget

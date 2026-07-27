@@ -150,14 +150,33 @@ export const adminService = {
     const target = users.find(u => u.id === userId);
     if (!target) return false;
 
-    // ADMIN cannot delete OWNER or another ADMIN
-    if (operatorRole === 'ADMIN' && (target.role === 'OWNER' || target.role === 'ADMIN')) {
-      return false;
+    // OWNER can delete all roles
+    if (operatorRole === 'OWNER') {
+      const filtered = users.filter(u => u.id !== userId);
+      this.saveUsers(filtered);
+      return true;
     }
 
-    const filtered = users.filter(u => u.id !== userId);
-    this.saveUsers(filtered);
-    return true;
+    // ADMIN can ONLY delete USER role (cannot delete ADMIN or OWNER)
+    if (operatorRole === 'ADMIN') {
+      if (target.role !== 'USER') {
+        return false;
+      }
+      const filtered = users.filter(u => u.id !== userId);
+      this.saveUsers(filtered);
+      return true;
+    }
+
+    return false;
+  },
+
+  isUserBlocked(identifier: string): boolean {
+    if (!identifier) return false;
+    const users = this.getUsers();
+    const found = users.find(
+      u => u.id === identifier || u.username === identifier || u.email === identifier
+    );
+    return found ? found.status === 'BLOCKED' : false;
   },
 
   addUser(newUser: Partial<AdminUserItem>, operatorRole: UserRole): AdminUserItem | null {
