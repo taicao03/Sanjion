@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, LogIn, UserPlus, Heart, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { authService } from '../../services/authService';
 
@@ -18,6 +18,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuc
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,15 +38,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuc
     setSuccessMsg(null);
 
     try {
+      const formattedEmail = email.includes('@') ? email : `${email}@sanjion.dev`;
       if (mode === 'login') {
-        await authService.loginWithEmail(email, password);
+        await authService.loginWithEmail(formattedEmail, password);
         setSuccessMsg('Đăng nhập thành công!');
         setTimeout(() => {
           onAuthSuccess();
           onClose();
         }, 600);
       } else {
-        await authService.registerWithEmail(email, password, fullName);
+        await authService.registerWithEmail(formattedEmail, password, fullName);
         setSuccessMsg('Đăng ký tài khoản thành công! Bạn có thể đăng nhập ngay.');
         setMode('login');
       }

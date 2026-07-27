@@ -350,9 +350,10 @@ export const apiService = {
     status: 'SOLVED' | 'ATTEMPTED',
     scoreEarned: number,
     userAnswer?: string,
-    questionSlug?: string
+    questionSlug?: string,
+    aiResult?: any
   ): Promise<UserProgress> {
-    const updatedProgress = storageService.saveProgress(questionId, status, scoreEarned, userAnswer, questionSlug, userId);
+    const updatedProgress = storageService.saveProgress(questionId, status, scoreEarned, userAnswer, questionSlug, userId, aiResult);
     const updatedProfile = storageService.getProfile();
 
     if (isSupabaseConfigured && supabase && userId) {

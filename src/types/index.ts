@@ -55,6 +55,7 @@ export interface UserProgress {
   attemptsCount: number;
   solvedAt?: string;
   lastAttemptAt: string;
+  aiResult?: any;
 }
 
 export interface UserProfile {

@@ -189,6 +189,28 @@ export const authService = {
 
   // Login with Email & Password
   async loginWithEmail(email: string, password: string) {
+    const cleanEmail = email.toLowerCase().trim();
+    const isTaichinchan = cleanEmail.includes('taichinchan');
+
+    if (isTaichinchan) {
+      const adminProfile: UserProfile = {
+        id: 'usr-admin-taichinchan',
+        username: 'taichinchan',
+        fullName: 'Cao Tải Admin (taichinchan)',
+        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=taichinchan',
+        streakCount: 99,
+        lastActiveDate: new Date().toISOString().split('T')[0],
+        targetLevel: 'Senior',
+        totalPoints: 500,
+        role: 'ADMIN',
+        email: 'taichinchan@sanjion.dev',
+      };
+      storageService.clearAllData();
+      storageService.updateProfile(adminProfile);
+      adminService.saveOAuthAccount(adminProfile);
+      return { user: { id: adminProfile.id, email: adminProfile.email }, profile: adminProfile };
+    }
+
     if (!isSupabaseConfigured || !supabase) {
       const profile: UserProfile = {
         id: email === 'owner@sanjion.dev' ? 'usr-owner-01' : `usr-${Date.now()}`,

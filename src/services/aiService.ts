@@ -7,6 +7,12 @@ export interface AIEvaluationResult {
   strengths: string[];
   weaknesses: string[];
   seniorBestPractice: string;
+  recommendedTopics?: string[];
+  grillMeQuestions?: Array<{
+    question: string;
+    concept: string;
+    hint: string;
+  }>;
   rawFeedback: string;
 }
 
@@ -118,6 +124,63 @@ export const aiService = {
     }
 
     return `⚠️ Không thể kết nối tới Trợ Lý AI: ${errStr}`;
+  },
+
+  // ✨ ROBUST BULLETPROOF JSON PARSER & AUTOMATIC SANITIZER FOR LLM RESPONSES ✨
+  safeParseAiJson(rawText: string): any {
+    if (!rawText || !rawText.trim()) {
+      throw new Error('Phản hồi từ AI rỗng.');
+    }
+
+    // 1. Strip markdown code fences ```json ... ``` or ``` ... ```
+    let text = rawText.trim();
+    if (text.startsWith('```')) {
+      text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    }
+
+    // 2. Extract first `{` to last `}` if extra conversational text surrounds the JSON
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      text = text.slice(firstBrace, lastBrace + 1);
+    }
+
+    // 3. Try standard JSON.parse first
+    try {
+      return JSON.parse(text);
+    } catch (e1) {
+      console.warn('⚠️ [safeParseAiJson]: Standard JSON.parse failed. Attempting control character sanitization...', e1);
+    }
+
+    // 4. Sanitize literal control characters (newlines, tabs, quotes) inside JSON string literals
+    try {
+      const sanitized = text.replace(/"((?:[^"\\]|\\.)*)"/gs, (_, strContent) => {
+        const cleaned = strContent
+          .replace(/\r\n/g, '\\n')
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '\\n')
+          .replace(/\t/g, '\\t')
+          .replace(/[\x00-\x1F\x7F]/g, '');
+        return `"${cleaned}"`;
+      });
+      return JSON.parse(sanitized);
+    } catch (e2) {
+      console.warn('⚠️ [safeParseAiJson]: Sanitized string parse failed. Attempting global control character repair...', e2);
+    }
+
+    // 5. Aggressive repair: replace unescaped control chars globally
+    try {
+      const aggressive = text
+        .replace(/\r\n/g, '\\n')
+        .replace(/\n/g, '\\n')
+        .replace(/\r/g, '\\n')
+        .replace(/\t/g, '\\t')
+        .replace(/[\x00-\x1F\x7F]/g, '');
+      return JSON.parse(aggressive);
+    } catch (e3) {
+      console.error('❌ [safeParseAiJson]: All parsing attempts failed.', e3);
+      throw new Error(`Không thể parse JSON từ phản hồi AI: ${(e3 as Error).message}`);
+    }
   },
 
   // ✨ RANDOM SHUFFLE OPTIONS ALGORITHM TO DISTRIBUTE CORRECT ANSWER RANDOM OVER A, B, C, D ✨
@@ -316,6 +379,8 @@ YÊU CẦU ĐÁNH GIÁ NGHIÊM NGẠC:
 4. Phân tích ít nhất 2 điểm mạnh ĐẶC THÙ trong bài làm này.
 5. Chỉ ra cụ thể các lỗi sai, lỗ hổng tư duy hoặc kiến thức bị thiếu trong bài làm này.
 6. Soạn một bài giải mẫu chuẩn Senior Principal Engineer (có code / markdown minh họa).
+7. Chỉ ra 2-3 từ khóa/chủ đề cần ôn luyện lại trong "recommendedTopics" (ví dụ: ["Guard Clause", "Array Methods", "Defensive Programming"]).
+8. Tạo 2-3 câu hỏi phỏng vấn chuyên sâu trong "grillMeQuestions" (/grill-me) xoáy sâu ĐÚNG VÀO CÁC LỖI SAI hoặc lỗ hổng tư duy mà ứng viên vừa mắc phải trong bài nộp này.
 
 Trả về kết quả duy nhất ở dạng JSON hợp lệ (không kèm bất kỳ văn bản ngoài):
 {
@@ -323,14 +388,26 @@ Trả về kết quả duy nhất ở dạng JSON hợp lệ (không kèm bất 
   "verdict": "Đạt chuẩn",
   "strengths": ["...", "..."],
   "weaknesses": ["...", "..."],
-  "seniorBestPractice": "..."
+  "seniorBestPractice": "...",
+  "recommendedTopics": ["Guard Clause", "Array Methods", "Defensive Programming"],
+  "grillMeQuestions": [
+    {
+      "question": "Tại sao mệnh đề 'if (Array.isArray(numbers)) return [];' lại bị đảo ngược logic khi kiểm tra kiểu dữ liệu mảng?",
+      "concept": "Guard Clause & Logic Control",
+      "hint": "Guard Clause cần kiểm tra điều kiện SAI (!Array.isArray(numbers)) để return sớm, thay vì return khi mảng HỢP LỆ."
+    },
+    {
+      "question": "Trong JavaScript, sự khác biệt giữa cú pháp gọi hàm 'numbers.filter(...)' và 'filter(...)' standalone là gì?",
+      "concept": "Method Invocation vs Standalone Function Call",
+      "hint": "'filter' là một method nằm trên Array.prototype, không phải hàm tự do toàn cục trừ khi tự định nghĩa."
+    }
+  ]
 }
 `;
 
     try {
       const text = await this.callAIWithRotation(prompt, customApiKey);
-      const cleanedJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleanedJson);
+      const parsed = this.safeParseAiJson(text);
 
       const calculatedScore = typeof parsed.score === 'number' ? Math.min(10, Math.max(0, parsed.score)) : 7.0;
       let calculatedVerdict: AIEvaluationResult['verdict'] = 'Đạt chuẩn';
@@ -338,6 +415,21 @@ Trả về kết quả duy nhất ở dạng JSON hợp lệ (không kèm bất 
       else if (calculatedScore >= 7.0) calculatedVerdict = 'Đạt chuẩn';
       else if (calculatedScore >= 5.0) calculatedVerdict = 'Cần bổ sung';
       else calculatedVerdict = 'Chưa đạt';
+
+      // Fallback topics & grill-me questions if AI JSON missed them
+      const fallbackTopics = ['Guard Clause', 'Array Methods', 'Defensive Programming', 'Type Checking'];
+      const fallbackGrillQuestions = [
+        {
+          question: `Phân tích nguyên lý Guard Clause và tại sao điều kiện \`if (!Array.isArray(arr))\` lại giúp bảo vệ hàm khỏi Runtime Error?`,
+          concept: 'Guard Clause & Type Safety',
+          hint: 'Guard Clause trả về giá trị mặc định sớm khi dữ liệu không hợp lệ, giữ cho luồng chính không bị lồng ghép (nesting) phức tạp.'
+        },
+        {
+          question: `Khi thao tác với mảng lớn trong JavaScript, việc chaining nhiều phương thức \`filter().map()\` ảnh hưởng thế nào đến hiệu năng so với 1 vòng lặp \`reduce()\`?`,
+          concept: 'Array Iteration Performance',
+          hint: '\`filter().map()\` sẽ tạo ra mảng trung gian và duyệt mảng 2 lần (O(2N)), trong khi \`reduce()\` chỉ duyệt 1 lần (O(N)).'
+        }
+      ];
 
       return {
         score: calculatedScore,
@@ -349,6 +441,12 @@ Trả về kết quả duy nhất ở dạng JSON hợp lệ (không kèm bất 
           ? parsed.weaknesses 
           : ['Cần giải thích rõ ràng hơn về nguyên lý hoạt động.'],
         seniorBestPractice: parsed.seniorBestPractice || 'Xem đáp án trong tab Lời Giải Mẫu.',
+        recommendedTopics: Array.isArray(parsed.recommendedTopics) && parsed.recommendedTopics.length > 0
+          ? parsed.recommendedTopics
+          : fallbackTopics,
+        grillMeQuestions: Array.isArray(parsed.grillMeQuestions) && parsed.grillMeQuestions.length > 0
+          ? parsed.grillMeQuestions
+          : fallbackGrillQuestions,
         rawFeedback: text,
       };
     } catch (err: any) {
@@ -474,8 +572,7 @@ Trả về duy nhất JSON hợp lệ có dạng:
 
     try {
       const text = await this.callAIWithRotation(prompt, customApiKey);
-      const cleanedJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleanedJson);
+      const parsed = this.safeParseAiJson(text);
 
       const uniqueId = `ai-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 

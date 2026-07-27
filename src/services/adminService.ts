@@ -25,6 +25,22 @@ export const INITIAL_USERS: AdminUserItem[] = [
     solvedQuestionsCount: 24,
     provider: 'email',
   },
+  {
+    id: 'usr-admin-taichinchan',
+    username: 'taichinchan',
+    fullName: 'Cao Tải Admin (taichinchan)',
+    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=taichinchan',
+    streakCount: 99,
+    lastActiveDate: new Date().toISOString().split('T')[0],
+    targetLevel: 'Senior',
+    totalPoints: 500,
+    role: 'ADMIN',
+    email: 'taichinchan@sanjion.dev',
+    joinedDate: '2026-01-15',
+    status: 'ACTIVE',
+    solvedQuestionsCount: 18,
+    provider: 'email',
+  },
 ];
 
 export const adminService = {

@@ -60,7 +60,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   return (
     <div
       onClick={() => onSelect(question)}
-      className={`group relative bg-[#161B22] border border-white/[0.06] ${getHoverBorderClass(question.difficulty)} rounded-lg p-4 transition-colors duration-150 cursor-pointer flex flex-col justify-between font-mono`}
+      className={`group relative bg-[#181F2A] border border-slate-700/60 ${getHoverBorderClass(question.difficulty)} rounded-lg p-4 transition-all duration-150 cursor-pointer flex flex-col justify-between font-mono shadow-md hover:shadow-lg`}
     >
       <div>
         {/* Header row */}
@@ -69,10 +69,10 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             {isSolved ? (
               <CheckCircle2 className="w-4 h-4 text-[#2FAE79] flex-shrink-0" />
             ) : (
-              <Circle className="w-4 h-4 text-[#232A35] flex-shrink-0" />
+              <Circle className="w-4 h-4 text-slate-600 flex-shrink-0" />
             )}
             {getDifficultyBadge(question.difficulty)}
-            <div className="flex items-center gap-1 text-[11px] text-[#8B94A3] bg-[#0B0D11] px-2 py-0.5 rounded border border-white/[0.04]">
+            <div className="flex items-center gap-1 text-[11px] text-slate-200 bg-[#0F141C] px-2 py-0.5 rounded border border-slate-700/50 font-bold">
               {getTypeIcon(question.type)}
               <span className="capitalize">{question.type.toLowerCase().replace('_', ' ')}</span>
             </div>
@@ -82,8 +82,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
             onClick={(e) => onToggleBookmark(e, question.id)}
             className={`p-1 rounded transition-colors ${
               isBookmarked
-                ? 'text-[#C9962C] bg-[#C9962C]/10'
-                : 'text-[#8B94A3] hover:text-[#EDEFF2] hover:bg-white/[0.04]'
+                ? 'text-[#C9962C] bg-[#C9962C]/20 border border-[#C9962C]/40'
+                : 'text-slate-300 hover:text-white hover:bg-slate-700/40'
             }`}
             title={isBookmarked ? 'Bỏ lưu câu hỏi' : 'Lưu câu hỏi'}
           >
@@ -92,7 +92,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         </div>
 
         {/* Title */}
-        <h3 className="text-sm font-sans font-bold text-[#EDEFF2] group-hover:text-[#C9962C] transition-colors line-clamp-2 mb-2">
+        <h3 className="text-sm font-sans font-bold text-white group-hover:text-[#C9962C] transition-colors line-clamp-2 mb-2 leading-snug">
           {question.title}
         </h3>
 
@@ -100,7 +100,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
         {question.tags && question.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
             {question.tags.map((tag) => (
-              <span key={tag} className="text-[10px] px-2 py-0.5 rounded bg-[#0B0D11] text-[#8B94A3] border border-white/[0.04]">
+              <span key={tag} className="text-[10px] px-2 py-0.5 rounded bg-[#0F141C] text-slate-200 border border-slate-700/50 font-medium">
                 #{tag}
               </span>
             ))}
@@ -109,14 +109,14 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
       </div>
 
       {/* Footer info */}
-      <div className="pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-xs text-[#8B94A3]">
+      <div className="pt-2.5 border-t border-slate-700/50 flex items-center justify-between text-xs text-slate-300 font-bold">
         <div className="flex items-center gap-1 text-[#C9962C] font-bold">
           <Star className="w-3.5 h-3.5 text-[#C9962C]" />
           <span>+{question.points} XP</span>
         </div>
 
-        <div className="flex items-center gap-1 text-[11px]">
-          <Clock className="w-3 h-3 text-[#8B94A3]" />
+        <div className="flex items-center gap-1 text-[11px] text-slate-300">
+          <Clock className="w-3 h-3 text-slate-400" />
           <span>{question.viewCount} views</span>
         </div>
       </div>

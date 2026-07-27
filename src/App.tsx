@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   BookOpen,
@@ -12,68 +12,99 @@ import {
   Bookmark,
   Layers,
   Zap,
-} from 'lucide-react';
-import { Category, Question, UserProfile, UserProgress } from './types';
-import { apiService } from './services/apiService';
-import { storageService } from './services/storageService';
-import { authService } from './services/authService';
-import { aiService } from './services/aiService';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
+} from "lucide-react";
+import { Category, Question, UserProfile, UserProgress } from "./types";
+import { apiService } from "./services/apiService";
+import { storageService } from "./services/storageService";
+import { authService } from "./services/authService";
+import { aiService } from "./services/aiService";
+import { supabase, isSupabaseConfigured } from "./lib/supabase";
 
-import { Navbar } from './components/layout/Navbar';
-import { QuestionCard } from './components/questions/QuestionCard';
-import { FilterBar } from './components/questions/FilterBar';
-import { CodeEditorWorkspace } from './components/questions/CodeEditorWorkspace';
-import { GenerateQuestionModal } from './components/questions/GenerateQuestionModal';
-import { ProgressOverview } from './components/dashboard/ProgressOverview';
-import { CategoryBreakdownChart } from './components/dashboard/CategoryBreakdownChart';
-import { StreakHeatmap } from './components/dashboard/StreakHeatmap';
-import { RoadmapView } from './components/roadmap/RoadmapView';
-import { AiTutorWidget } from './components/ai/AiTutorWidget';
-import { AuthModal } from './components/auth/AuthModal';
-import { AdminDashboard } from './components/admin/AdminDashboard';
-import { TextSelectionToolbar } from './components/shared/TextSelectionToolbar';
+import { MOCK_CATEGORIES } from "./services/mockData";
+import { Navbar } from "./components/layout/Navbar";
+import { QuestionCard } from "./components/questions/QuestionCard";
+import { FilterBar } from "./components/questions/FilterBar";
+import { CodeEditorWorkspace } from "./components/questions/CodeEditorWorkspace";
+import { GenerateQuestionModal } from "./components/questions/GenerateQuestionModal";
+import { ProgressOverview } from "./components/dashboard/ProgressOverview";
+import { CategoryBreakdownChart } from "./components/dashboard/CategoryBreakdownChart";
+import { StreakHeatmap } from "./components/dashboard/StreakHeatmap";
+import { RoadmapView } from "./components/roadmap/RoadmapView";
+import { AiTutorWidget } from "./components/ai/AiTutorWidget";
+import { AuthModal } from "./components/auth/AuthModal";
+import { AdminDashboard } from "./components/admin/AdminDashboard";
+import { TextSelectionToolbar } from "./components/shared/TextSelectionToolbar";
+import { getUserLevel, LevelUpModal, LevelTier } from "./components/shared/LevelUpModal";
 
 export function App() {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'questions' | 'workspace' | 'bookmarks' | 'roadmap' | 'admin'>('roadmap');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [progressMap, setProgressMap] = useState<Record<string, UserProgress>>({});
-  const [profile, setProfile] = useState<UserProfile>(storageService.getProfile());
-  const [activityHistory, setActivityHistory] = useState<Record<string, number>>(storageService.getActivityHistory());
-  const [bookmarks, setBookmarks] = useState<string[]>(storageService.getBookmarks());
+  const [currentView, setCurrentView] = useState<
+    "dashboard" | "questions" | "workspace" | "bookmarks" | "roadmap" | "admin"
+  >(() => {
+    const saved = localStorage.getItem("fe_sanjion_active_view");
+    return (saved as any) || "roadmap";
+  });
+  const [categories, setCategories] = useState<Category[]>(() => MOCK_CATEGORIES);
+  const [questions, setQuestions] = useState<Question[]>(() => storageService.getQuestions());
+  const [progressMap, setProgressMap] = useState<Record<string, UserProgress>>(() => {
+    const prof = storageService.getProfile();
+    return storageService.getAllProgress(prof.id);
+  });
+  const [profile, setProfile] = useState<UserProfile>(
+    storageService.getProfile(),
+  );
+  const [activityHistory, setActivityHistory] = useState<
+    Record<string, number>
+  >(storageService.getActivityHistory());
+  const [bookmarks, setBookmarks] = useState<string[]>(
+    storageService.getBookmarks(),
+  );
 
   // Workspace & Active Question
-  const [activeQuestion, setActiveQuestion] = useState<Question | null>(null);
+  const [activeQuestion, setActiveQuestion] = useState<Question | null>(() => {
+    const savedId = localStorage.getItem("fe_sanjion_active_question_id");
+    if (!savedId) return null;
+    const all = storageService.getQuestions();
+    return all.find((q) => q.id === savedId || q.slug === savedId) || null;
+  });
 
   // Filters
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('ALL');
-  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("ALL");
+  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Modals
-  const [isGenerateModalOpen, setIsGenerateModalOpen] = useState<boolean>(false);
+  const [isGenerateModalOpen, setIsGenerateModalOpen] =
+    useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   // ✨ DIRECT AI GENERATION STATES FOR SAME TOPIC & DIFFICULTY ✨
-  const [isDirectAiGenerating, setIsDirectAiGenerating] = useState<boolean>(false);
-  const [directAiMessage, setDirectAiMessage] = useState<string>('');
+  const [isDirectAiGenerating, setIsDirectAiGenerating] =
+    useState<boolean>(false);
+  const [directAiMessage, setDirectAiMessage] = useState<string>("");
 
   useEffect(() => {
     loadInitialData();
 
     if (isSupabaseConfigured && supabase) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: string, _session: any) => {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          await loadUserData();
-        } else if (event === 'SIGNED_OUT') {
-          setIsLoggedIn(false);
-          storageService.clearAllData();
-          setProfile(storageService.getProfile());
-        }
-      });
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange(
+        async (event: string, _session: any) => {
+          if (
+            event === "SIGNED_IN" ||
+            event === "TOKEN_REFRESHED" ||
+            event === "USER_UPDATED"
+          ) {
+            await loadUserData();
+          } else if (event === "SIGNED_OUT") {
+            setIsLoggedIn(false);
+            storageService.clearAllData();
+            setProfile(storageService.getProfile());
+          }
+        },
+      );
 
       return () => {
         subscription.unsubscribe();
@@ -84,13 +115,21 @@ export function App() {
   const loadInitialData = async () => {
     const cats = await apiService.getCategories();
     const qs = await apiService.getQuestions();
-    setCategories(cats);
-    setQuestions(qs);
+    if (cats && cats.length > 0) setCategories(cats);
+    if (qs && qs.length > 0) {
+      const localAi = localStorage.getItem("fe_sanjion_ai_questions");
+      const aiQs: Question[] = localAi ? JSON.parse(localAi) : [];
+      const combined = [...aiQs, ...qs];
+      const uniqueMap = new Map();
+      combined.forEach((q) => uniqueMap.set(q.id, q));
+      setQuestions(Array.from(uniqueMap.values()));
+    }
     await loadUserData();
   };
 
   const loadUserData = async () => {
-    const { user, profile: fetchedProfile } = await authService.getSessionUser();
+    const { user, profile: fetchedProfile } =
+      await authService.getSessionUser();
     if (user && fetchedProfile) {
       setIsLoggedIn(true);
       setProfile(fetchedProfile);
@@ -111,40 +150,70 @@ export function App() {
     setBookmarks(storageService.getBookmarks());
   };
 
+  // Level Up Modal State
+  const [levelUpInfo, setLevelUpInfo] = useState<{
+    userName: string;
+    oldLevel?: LevelTier;
+    newLevel: LevelTier;
+    currentPoints: number;
+  } | null>(null);
+
   const handleSolveQuestion = async (
     questionId: string,
     score: number,
-    userAnswer?: string
+    userAnswer?: string,
+    aiResult?: any
   ) => {
     if (!isLoggedIn || !profile.id) {
       setIsAuthModalOpen(true);
       return;
     }
 
+    const oldPoints = profile.totalPoints || 0;
+    const oldLevel = getUserLevel(oldPoints);
+
     await apiService.saveUserProgress(
       profile.id,
       questionId,
-      'SOLVED',
+      "SOLVED",
       score,
       userAnswer,
-      activeQuestion?.slug
+      activeQuestion?.slug,
+      aiResult
     );
     const updatedProfile = storageService.getProfile();
+    const newPoints = updatedProfile.totalPoints || 0;
+    const newLevel = getUserLevel(newPoints);
+
     setProfile(updatedProfile);
     setProgressMap(storageService.getAllProgress(profile.id));
     setActivityHistory(storageService.getActivityHistory());
+
+    // Trigger Level Up Popup if user breached a new level tier!
+    if (newLevel.minPoints > oldLevel.minPoints) {
+      setLevelUpInfo({
+        userName: updatedProfile.fullName || updatedProfile.username || "Sanjioner",
+        oldLevel,
+        newLevel,
+        currentPoints: newPoints,
+      });
+    }
   };
 
   const handleSelectQuestion = (q: Question) => {
     setActiveQuestion(q);
-    setCurrentView('workspace');
+    setCurrentView("workspace");
+    localStorage.setItem("fe_sanjion_active_view", "workspace");
+    localStorage.setItem("fe_sanjion_active_question_id", q.id);
   };
 
   const handleQuestionGenerated = async (newQuestion: Question) => {
     await apiService.saveQuestion(newQuestion);
     setQuestions((prev) => [newQuestion, ...prev]);
     setActiveQuestion(newQuestion);
-    setCurrentView('workspace');
+    setCurrentView("workspace");
+    localStorage.setItem("fe_sanjion_active_view", "workspace");
+    localStorage.setItem("fe_sanjion_active_question_id", newQuestion.id);
   };
 
   // ✨ 1-CLICK DIRECT SAME LEVEL & SAME TOPIC AI GENERATION (DYNAMIC MODEL FROM .ENV.LOCAL) ✨
@@ -155,11 +224,13 @@ export function App() {
     }
 
     const cat = categories.find((c) => c.id === activeQuestion.categoryId);
-    const categoryName = cat?.name || 'Frontend Core';
+    const categoryName = cat?.name || "Frontend Core";
     const activeModel = aiService.getActiveModelName();
 
     setIsDirectAiGenerating(true);
-    setDirectAiMessage(`✨ Model AI [${activeModel}] đang sinh câu hỏi mới 100% (Chủ đề: ${categoryName} - Cấp độ: ${activeQuestion.difficulty})...`);
+    setDirectAiMessage(
+      `✨ Model AI [${activeModel}] đang sinh câu hỏi mới 100% (Chủ đề: ${categoryName} - Cấp độ: ${activeQuestion.difficulty})...`,
+    );
 
     try {
       const apiKey = aiService.getStoredApiKey();
@@ -169,15 +240,15 @@ export function App() {
         activeQuestion.difficulty,
         activeQuestion.type,
         undefined,
-        apiKey
+        apiKey,
       );
 
       await apiService.saveQuestion(newQ);
       setQuestions((prev) => [newQ, ...prev]);
       setActiveQuestion(newQ);
-      setCurrentView('workspace');
+      setCurrentView("workspace");
     } catch (err: any) {
-      console.error('Direct AI Generation error:', err);
+      console.error("Direct AI Generation error:", err);
       setIsGenerateModalOpen(true);
     } finally {
       setIsDirectAiGenerating(false);
@@ -189,25 +260,28 @@ export function App() {
     setIsLoggedIn(false);
     const defaultProfile = storageService.resetProfile();
     setProfile(defaultProfile);
-    if (currentView === 'admin') {
-      setCurrentView('roadmap');
+    if (currentView === "admin") {
+      setCurrentView("roadmap");
     }
     await loadUserData();
   };
 
   // Filter questions logic with dual ID and Slug progress resolution
   const filteredQuestions = questions.filter((q) => {
-    if (selectedCategory !== 'ALL' && q.categoryId !== selectedCategory)
+    if (selectedCategory !== "ALL" && q.categoryId !== selectedCategory)
       return false;
-    if (selectedDifficulty !== 'ALL' && q.difficulty !== selectedDifficulty)
+    if (selectedDifficulty !== "ALL" && q.difficulty !== selectedDifficulty)
       return false;
 
-    const isSolved = progressMap[q.id]?.status === 'SOLVED' || (q.slug && progressMap[q.slug]?.status === 'SOLVED');
-    if (selectedStatus === 'SOLVED' && !isSolved) return false;
-    if (selectedStatus === 'UNSOLVED' && isSolved) return false;
+    const isSolved =
+      progressMap[q.id]?.status === "SOLVED" ||
+      (q.slug && progressMap[q.slug]?.status === "SOLVED");
+    if (selectedStatus === "SOLVED" && !isSolved) return false;
+    if (selectedStatus === "UNSOLVED" && isSolved) return false;
 
-    if (searchQuery.trim() !== '') {
-      const qText = `${q.title} ${q.content} ${q.tags?.join(' ')}`.toLowerCase();
+    if (searchQuery.trim() !== "") {
+      const qText =
+        `${q.title} ${q.content} ${q.tags?.join(" ")}`.toLowerCase();
       if (!qText.includes(searchQuery.toLowerCase())) return false;
     }
 
@@ -223,7 +297,11 @@ export function App() {
         currentView={currentView}
         onSelectView={(v) => {
           setCurrentView(v as any);
-          if (v !== 'workspace') setActiveQuestion(null);
+          localStorage.setItem("fe_sanjion_active_view", v);
+          if (v !== "workspace") {
+            setActiveQuestion(null);
+            localStorage.removeItem("fe_sanjion_active_question_id");
+          }
         }}
         profile={profile}
         onOpenMockInterview={() => setIsGenerateModalOpen(true)}
@@ -234,13 +312,18 @@ export function App() {
       />
 
       {/* Main Body Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 md:pb-6">
-        {currentView === 'workspace' && activeQuestion ? (
+      <main className="flex-1 max-w-[1400px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 md:pb-6">
+        {currentView === "workspace" && activeQuestion ? (
           <CodeEditorWorkspace
             question={activeQuestion}
-            progress={progressMap[activeQuestion.id] || (activeQuestion.slug ? progressMap[activeQuestion.slug] : undefined)}
+            progress={
+              progressMap[activeQuestion.id] ||
+              (activeQuestion.slug
+                ? progressMap[activeQuestion.slug]
+                : undefined)
+            }
             isBookmarked={bookmarks.includes(activeQuestion.id)}
-            onBack={() => setCurrentView('roadmap')}
+            onBack={() => setCurrentView("roadmap")}
             onSolveQuestion={handleSolveQuestion}
             onToggleBookmark={handleToggleBookmark}
             allQuestions={questions}
@@ -249,7 +332,7 @@ export function App() {
             isLoggedIn={isLoggedIn}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />
-        ) : currentView === 'admin' ? (
+        ) : currentView === "admin" ? (
           /* Admin Dashboard */
           <AdminDashboard
             currentProfile={profile}
@@ -262,7 +345,7 @@ export function App() {
             onSelectQuestion={handleSelectQuestion}
             onSelectView={(v) => setCurrentView(v as any)}
           />
-        ) : currentView === 'roadmap' ? (
+        ) : currentView === "roadmap" ? (
           /* Roadmap View */
           <RoadmapView
             questions={questions}
@@ -270,37 +353,39 @@ export function App() {
             profile={profile}
             onSelectQuestion={handleSelectQuestion}
             onOpenAiAssistant={() => {
-              const btn = document.querySelector('button[title*="Trợ Lý AI Tutor"], button:has(svg.animate-bounce)') as HTMLButtonElement;
+              const btn = document.querySelector(
+                'button[title*="Trợ Lý AI Tutor"], button:has(svg.animate-bounce)',
+              ) as HTMLButtonElement;
               if (btn) btn.click();
             }}
           />
-        ) : currentView === 'dashboard' ? (
+        ) : currentView === "dashboard" ? (
           /* Dashboard View */
           <div className="space-y-6 sm:space-y-8 animate-fadeIn">
             {/* Hero Welcome Banner - Editor Noir Style */}
-            <div className="relative overflow-hidden rounded-lg bg-[#161B22] border border-white/[0.06] p-6 sm:p-8 font-mono">
+            <div className="relative overflow-hidden rounded-lg bg-[#181F2A] border border-slate-700/60 p-6 sm:p-8 font-mono shadow-md">
               <div className="relative z-10 max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#0B0D11] border border-white/[0.06] text-[#C9962C] text-xs font-bold mb-3">
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#0F141C] border border-slate-700/60 text-[#C9962C] text-xs font-bold mb-3">
                   <Sparkles className="w-3.5 h-3.5 text-[#C9962C]" />
-                  <span>FE Sanjion Atelier Edition</span>
+                  <span>Sanjion Atelier Edition</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-display font-medium text-[#EDEFF2] tracking-tight">
-                  sanjion@fe ~ % ready for senior review
-                </h1>
-                <p className="text-[#8B94A3] text-xs sm:text-sm mt-3 leading-relaxed">
-                  Chào mừng trở lại, <span className="text-[#EDEFF2] font-bold">{profile.fullName}</span>. Hệ thống ôn luyện Frontend Senior chuẩn Editor Noir.
+                <p className="text-slate-200 text-xs sm:text-sm mt-3 leading-relaxed">
+                  Chào mừng trở lại,{" "}
+                  <span className="text-white font-bold">
+                    {profile.fullName}
+                  </span>
                 </p>
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
-                    onClick={() => setCurrentView('questions')}
-                    className="px-4 py-2 rounded bg-[#C9962C] hover:bg-[#C9962C]/90 text-[#0B0D11] font-bold text-xs transition-colors flex items-center gap-2 cursor-pointer"
+                    onClick={() => setCurrentView("questions")}
+                    className="px-4 py-2 rounded bg-[#C9962C] hover:bg-[#C9962C]/90 text-slate-950 font-bold text-xs transition-colors flex items-center gap-2 cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4" />
                     Luyện Bài Sanjion
                   </button>
                   <button
                     onClick={() => setIsGenerateModalOpen(true)}
-                    className="px-4 py-2 rounded bg-[#0B0D11] hover:bg-white/[0.04] text-[#EDEFF2] border border-white/[0.06] font-bold text-xs transition-colors flex items-center gap-2 cursor-pointer"
+                    className="px-4 py-2 rounded bg-[#0F141C] hover:bg-slate-700/50 text-white border border-slate-700/60 font-bold text-xs transition-colors flex items-center gap-2 cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4 text-[#5B54D9]" />
                     Sinh Bài Tập Bằng AI
@@ -327,7 +412,7 @@ export function App() {
               <StreakHeatmap activityHistory={activityHistory} />
             </div>
           </div>
-        ) : currentView === 'questions' ? (
+        ) : currentView === "questions" ? (
           /* Questions Bank View */
           <div className="space-y-4 sm:space-y-6 animate-fadeIn font-mono">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -378,7 +463,10 @@ export function App() {
                   <QuestionCard
                     key={q.id}
                     question={q}
-                    progress={progressMap[q.id] || (q.slug ? progressMap[q.slug] : undefined)}
+                    progress={
+                      progressMap[q.id] ||
+                      (q.slug ? progressMap[q.slug] : undefined)
+                    }
                     isBookmarked={bookmarks.includes(q.id)}
                     onSelect={handleSelectQuestion}
                     onToggleBookmark={handleToggleBookmark}
@@ -415,7 +503,10 @@ export function App() {
                   <QuestionCard
                     key={q.id}
                     question={q}
-                    progress={progressMap[q.id] || (q.slug ? progressMap[q.slug] : undefined)}
+                    progress={
+                      progressMap[q.id] ||
+                      (q.slug ? progressMap[q.slug] : undefined)
+                    }
                     isBookmarked={true}
                     onSelect={handleSelectQuestion}
                     onToggleBookmark={handleToggleBookmark}
@@ -437,7 +528,9 @@ export function App() {
               </div>
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-800">Gemini AI Sanjioner</h3>
+              <h3 className="text-lg font-black text-slate-800">
+                Gemini AI Sanjioner
+              </h3>
               <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
                 {directAiMessage}
               </p>
@@ -469,6 +562,17 @@ export function App() {
         activeQuestion={activeQuestion}
         onOpenApiKeyModal={() => setIsGenerateModalOpen(true)}
       />
+
+      {/* Level Breakthrough Celebration Modal */}
+      {levelUpInfo && (
+        <LevelUpModal
+          userName={levelUpInfo.userName}
+          oldLevel={levelUpInfo.oldLevel}
+          newLevel={levelUpInfo.newLevel}
+          currentPoints={levelUpInfo.currentPoints}
+          onClose={() => setLevelUpInfo(null)}
+        />
+      )}
 
       {/* Global Text Selection Pronunciation & Translation Toolbar */}
       <TextSelectionToolbar />

@@ -94,7 +94,7 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
       label: 'Cực Khó',
       bg: 'bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100',
       text: 'text-purple-600',
-      activeBg: 'bg-purple-700 text-white border-purple-700 shadow-md shadow-purple-500/30 scale-[1.02]',
+      activeBg: 'bg-[#C9962C]/20 text-white border border-[#C9962C]',
       shadow: 'shadow-purple-500/20',
     },
   };
@@ -102,34 +102,31 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-6 animate-fadeIn">
-        <div className="bg-white border border-pink-200/90 rounded-3xl max-w-lg w-full p-5 sm:p-7 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto animate-scaleUp flex flex-col">
-          {/* Top Decorative Glow */}
-          <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 bg-gradient-to-tr from-pink-500/20 to-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
-
+        <div className="bg-[#181F2A] border border-slate-700/60 rounded-2xl max-w-lg w-full p-5 sm:p-7 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto animate-scaleUp flex flex-col text-white font-mono">
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute right-4 top-4 p-2 text-slate-400 hover:text-pink-600 rounded-2xl hover:bg-rose-50 transition-colors z-10"
+            className="absolute right-4 top-4 p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-700/50 transition-colors z-10"
           >
             <X className="w-5 h-5" />
           </button>
 
           {/* Header */}
           <div className="text-center pb-2 flex-shrink-0">
-            <div className="w-14 h-14 rounded-3xl bg-gradient-to-tr from-pink-500 via-purple-600 to-amber-400 flex items-center justify-center text-white mx-auto shadow-lg shadow-purple-500/20 mb-2.5">
-              <Wand2 className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-xl bg-[#5B54D9]/20 border border-[#5B54D9]/50 flex items-center justify-center text-[#5B54D9] mx-auto mb-2">
+              <Wand2 className="w-6 h-6 text-[#5B54D9]" />
             </div>
-            <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Thiết Kế Câu Hỏi Sanjion Bằng AI</h3>
+            <h3 className="text-xl font-bold text-white tracking-tight">Thiết Kế Câu Hỏi Sanjion Bằng AI</h3>
             
             {/* Dynamic AI Model Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-[11px] font-extrabold my-1.5 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#0F141C] border border-[#5B54D9]/40 text-slate-200 text-[11px] font-bold my-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#5B54D9] animate-pulse" />
               <span>Đang vận hành: {activeModel}</span>
             </div>
           </div>
 
           {errorMsg && (
-            <div className="flex items-center gap-2 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold my-2 flex-shrink-0">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-[#C1553B]/20 border border-[#C1553B]/50 text-[#C1553B] text-xs font-bold my-2 flex-shrink-0">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{errorMsg}</span>
             </div>
@@ -138,7 +135,7 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
           <form onSubmit={handleGenerate} className="space-y-4 my-2 overflow-y-visible pr-1 flex-1">
             {/* ✨ HIGH-END CUSTOM DROPDOWN COMPONENT (NO MORE NATIVE OS SELECT) ✨ */}
             <div className="relative">
-              <label className="block text-xs font-extrabold text-slate-700 mb-1.5 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 uppercase tracking-wider">
                 1. Chọn Chủ Đề Sanjion (Roadmap.sh):
               </label>
 
@@ -146,18 +143,18 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                className="w-full text-left bg-gradient-to-r from-rose-50/80 via-purple-50/60 to-amber-50/50 hover:from-rose-100 hover:to-purple-100 border border-pink-300/80 rounded-2xl px-4 py-3 text-xs text-slate-800 font-extrabold focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all cursor-pointer shadow-sm flex items-center justify-between gap-3 group"
+                className="w-full text-left bg-[#0F141C] hover:bg-slate-800/80 border border-slate-700/60 rounded-lg px-4 py-3 text-xs text-white font-bold focus:outline-none focus:border-[#C9962C] transition-all cursor-pointer shadow-sm flex items-center justify-between gap-3 group"
               >
                 <div className="flex items-center gap-3 truncate">
-                  <div className="w-8 h-8 rounded-xl bg-white p-1 flex items-center justify-center font-bold flex-shrink-0 shadow-sm border border-pink-100">
-                    <CategoryIcon slug={selectedCategoryObj?.slug} name={selectedCategoryObj?.name} className="w-6 h-6" />
+                  <div className="w-8 h-8 rounded-lg bg-[#181F2A] p-1 flex items-center justify-center font-bold flex-shrink-0 border border-slate-700/60">
+                    <CategoryIcon slug={selectedCategoryObj?.slug} name={selectedCategoryObj?.name} className="w-5 h-5 text-[#C9962C]" />
                   </div>
                   <div className="truncate">
-                    <span className="text-slate-800 font-black text-xs block truncate">{selectedCategoryObj?.name}</span>
-                    <span className="text-slate-500 font-medium text-[10px] block truncate">{selectedCategoryObj?.description}</span>
+                    <span className="text-white font-bold text-xs block truncate">{selectedCategoryObj?.name}</span>
+                    <span className="text-slate-300 text-[10px] block truncate">{selectedCategoryObj?.description}</span>
                   </div>
                 </div>
-                <ChevronDown className={`w-4 h-4 text-purple-600 flex-shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-4 h-4 text-slate-300 flex-shrink-0 transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Floating Custom Popup Menu */}
@@ -167,7 +164,7 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
                     className="fixed inset-0 z-20"
                     onClick={() => setIsCategoryDropdownOpen(false)}
                   />
-                  <div className="absolute left-0 right-0 top-full mt-2 z-30 bg-white/95 backdrop-blur-xl border border-pink-200/90 rounded-3xl p-2 shadow-2xl space-y-1 max-h-64 overflow-y-auto scrollbar-thin animate-fadeIn">
+                  <div className="absolute left-0 right-0 top-full mt-2 z-30 bg-[#0F141C] border border-slate-700 rounded-xl shadow-2xl max-h-56 overflow-y-auto p-1.5 space-y-1 animate-fadeIn scrollbar-thin">
                     {categories.map((cat) => {
                       const isSelected = selectedCategoryId === cat.id;
                       return (
@@ -178,26 +175,26 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
                             setSelectedCategoryId(cat.id);
                             setIsCategoryDropdownOpen(false);
                           }}
-                          className={`w-full text-left p-3 rounded-2xl transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                          className={`w-full text-left p-2.5 rounded-lg transition-colors flex items-center justify-between gap-3 cursor-pointer ${
                             isSelected
-                              ? 'bg-gradient-to-r from-purple-600 via-pink-500 to-amber-500 text-white shadow-md shadow-purple-500/20'
-                              : 'hover:bg-rose-50/80 text-slate-700 hover:translate-x-0.5'
+                              ? 'bg-[#5B54D9]/20 border border-[#5B54D9]/40 text-white font-bold'
+                              : 'hover:bg-slate-800 text-slate-200'
                           }`}
                         >
                           <div className="flex items-center gap-3 truncate">
-                            <div className="w-8 h-8 rounded-xl bg-white p-1 flex items-center justify-center font-bold flex-shrink-0 shadow-sm border border-pink-100">
-                              <CategoryIcon slug={cat.slug} name={cat.name} className="w-6 h-6" />
+                            <div className="w-8 h-8 rounded-lg bg-[#181F2A] p-1 flex items-center justify-center font-bold flex-shrink-0 border border-slate-700/60">
+                              <CategoryIcon slug={cat.slug} name={cat.name} className="w-5 h-5 text-[#C9962C]" />
                             </div>
                             <div className="truncate">
-                              <div className={`text-xs font-black truncate ${isSelected ? 'text-white' : 'text-slate-800'}`}>
+                              <div className={`text-xs font-bold truncate ${isSelected ? 'text-white' : 'text-white'}`}>
                                 {cat.name}
                               </div>
-                              <div className={`text-[10px] font-medium truncate ${isSelected ? 'text-pink-100' : 'text-slate-500'}`}>
+                              <div className={`text-[10px] font-medium truncate ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>
                                 {cat.description}
                               </div>
                             </div>
                           </div>
-                          {isSelected && <Check className="w-4 h-4 text-white flex-shrink-0" />}
+                          {isSelected && <Check className="w-4 h-4 text-[#2FAE79] flex-shrink-0" />}
                         </button>
                       );
                     })}
@@ -208,7 +205,7 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
 
             {/* Custom Interactive Grid Selector for Difficulty */}
             <div>
-              <label className="block text-xs font-extrabold text-slate-700 mb-1.5 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 uppercase tracking-wider">
                 2. Cấp Độ Độ Khó:
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -220,7 +217,7 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
                       key={diff}
                       type="button"
                       onClick={() => setDifficulty(diff)}
-                      className={`py-2.5 px-2 rounded-2xl text-xs font-black border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`py-2.5 px-2 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                         isSelected ? details.activeBg : details.bg
                       }`}
                     >
@@ -234,7 +231,7 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
 
             {/* Custom Interactive Cards for Question Type */}
             <div>
-              <label className="block text-xs font-extrabold text-slate-700 mb-1.5 uppercase tracking-wider">
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 uppercase tracking-wider">
                 3. Dạng Bài Tập Sanjion:
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -250,14 +247,14 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
                       key={t.id}
                       type="button"
                       onClick={() => setType(t.id as QuestionType)}
-                      className={`p-2.5 rounded-2xl text-left border transition-all flex flex-col justify-between cursor-pointer ${
+                      className={`p-2.5 rounded-lg border text-left transition-all flex flex-col justify-between cursor-pointer ${
                         isSelected
-                          ? 'bg-gradient-to-br from-purple-600 to-pink-600 text-white border-purple-600 shadow-md shadow-purple-500/25 scale-[1.02]'
-                          : 'bg-white hover:bg-rose-50/60 border-pink-100 text-slate-700'
+                          ? 'bg-[#5B54D9]/20 border-[#5B54D9] text-white'
+                          : 'bg-[#0F141C] border-slate-700/60 text-slate-300 hover:border-slate-500'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <Icon className={`w-4 h-4 ${isSelected ? 'text-amber-300' : 'text-purple-600'}`} />
+                        <Icon className={`w-4 h-4 ${isSelected ? 'text-[#C9962C]' : 'text-slate-400'}`} />
                         {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                       </div>
                       <div>

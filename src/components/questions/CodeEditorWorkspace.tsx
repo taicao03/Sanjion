@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Editor from '@monaco-editor/react';
-import prettier from 'prettier/standalone';
-import parserBabel from 'prettier/plugins/babel';
-import parserEstree from 'prettier/plugins/estree';
+import React, { useState, useEffect, useRef } from "react";
+import Editor from "@monaco-editor/react";
+import prettier from "prettier/standalone";
+import parserBabel from "prettier/plugins/babel";
+import parserEstree from "prettier/plugins/estree";
 import {
   Play,
   CheckCircle2,
@@ -22,21 +22,33 @@ import {
   Minimize2,
   ZoomIn,
   ZoomOut,
-} from 'lucide-react';
-import { Question, UserProgress } from '../../types';
-import { aiService, AIEvaluationResult } from '../../services/aiService';
-import { ApiKeyModal } from '../shared/ApiKeyModal';
-import { SuccessNextQuestionModal } from './SuccessNextQuestionModal';
-import { MarkdownRenderer } from '../shared/MarkdownRenderer';
-import { registerMonacoSnippets } from '../../services/snippetProvider';
-import confetti from 'canvas-confetti';
+  BookOpen,
+  MessageSquare,
+  Flame,
+  ChevronDown,
+  ChevronUp,
+  ArrowRight,
+} from "lucide-react";
+import { Question, UserProgress } from "../../types";
+import { aiService, AIEvaluationResult } from "../../services/aiService";
+import { storageService } from "../../services/storageService";
+import { ApiKeyModal } from "../shared/ApiKeyModal";
+import { SuccessNextQuestionModal } from "./SuccessNextQuestionModal";
+import { MarkdownRenderer } from "../shared/MarkdownRenderer";
+import { registerMonacoSnippets } from "../../services/snippetProvider";
+import confetti from "canvas-confetti";
 
 interface CodeEditorWorkspaceProps {
   question: Question;
   progress?: UserProgress;
   isBookmarked: boolean;
   onBack: () => void;
-  onSolveQuestion: (questionId: string, score: number, userAnswer?: string) => void;
+  onSolveQuestion: (
+    questionId: string,
+    score: number,
+    userAnswer?: string,
+    aiResult?: AIEvaluationResult,
+  ) => void;
   onToggleBookmark: (e: React.MouseEvent, questionId: string) => void;
   allQuestions?: Question[];
   onSelectQuestion?: (q: Question) => void;
@@ -58,15 +70,26 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   isLoggedIn = false,
   onOpenAuthModal,
 }) => {
-  const [activeTab, setActiveTab] = useState<'problem' | 'explanation' | 'ai'>('problem');
-  const [code, setCode] = useState<string>(progress?.userAnswer || '');
-  const [selectedQuizOption, setSelectedQuizOption] = useState<string | null>(null);
-  const [theoryAnswerInput, setTheoryAnswerInput] = useState<string>(progress?.userAnswer || '');
+  const [activeTab, setActiveTab] = useState<"problem" | "explanation" | "ai">(
+    "problem",
+  );
+  const [code, setCode] = useState<string>(progress?.userAnswer || "");
+  const [selectedQuizOption, setSelectedQuizOption] = useState<string | null>(
+    null,
+  );
+  const [theoryAnswerInput, setTheoryAnswerInput] = useState<string>(
+    progress?.userAnswer || "",
+  );
 
   const [outputLogs, setOutputLogs] = useState<string[]>([]);
-  const [testResults, setTestResults] = useState<{ pass: boolean; msg: string }[]>([]);
+  const [testResults, setTestResults] = useState<
+    { pass: boolean; msg: string }[]
+  >([]);
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
-  const [feedbackStatus, setFeedbackStatus] = useState<'idle' | 'success' | 'failed'>('idle');
+  const [expandedGrillIndex, setExpandedGrillIndex] = useState<number | null>(null);
+  const [feedbackStatus, setFeedbackStatus] = useState<
+    "idle" | "success" | "failed"
+  >("idle");
   const [validationError, setValidationError] = useState<string | null>(null);
 
   // Editor View Controls & Fullscreen State
@@ -85,18 +108,26 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    setCode(progress?.userAnswer || '');
+    setCode(progress?.userAnswer || "");
     setSelectedQuizOption(null);
-    setTheoryAnswerInput(progress?.userAnswer || '');
+    setTheoryAnswerInput(progress?.userAnswer || "");
     setOutputLogs([]);
     setTestResults([]);
-    setFeedbackStatus(progress?.status === 'SOLVED' ? 'success' : 'idle');
+    setFeedbackStatus(progress?.status === "SOLVED" ? "success" : "idle");
     setValidationError(null);
-    setAiResult(null);
     setAiError(null);
-    setActiveTab('problem');
     setIsSuccessModalOpen(false);
-  }, [question.id]);
+
+    // Restore saved AI Result if user previously evaluated this question!
+    const savedAiResult = progress?.aiResult || storageService.getProgress(question.id, question.slug)?.aiResult;
+    if (savedAiResult) {
+      setAiResult(savedAiResult);
+      setActiveTab("ai");
+    } else {
+      setAiResult(null);
+      setActiveTab("problem");
+    }
+  }, [question.id, progress]);
 
   const triggerConfetti = () => {
     // Editor Noir: Bỏ hiệu ứng pháo hoa confetti phô trương,
@@ -107,18 +138,30 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   const prepareCodeForRunner = (rawCode: string): string => {
     let cleaned = rawCode;
     // Strip ES Module import statements
-    cleaned = cleaned.replace(/^import\s+[\s\S]*?from\s+['"].*?['"];?/gm, '');
-    cleaned = cleaned.replace(/^import\s+['"].*?['"];?/gm, '');
+    cleaned = cleaned.replace(/^import\s+[\s\S]*?from\s+['"].*?['"];?/gm, "");
+    cleaned = cleaned.replace(/^import\s+['"].*?['"];?/gm, "");
     // Strip ES Module export statements
-    cleaned = cleaned.replace(/^export\s+default\s+.*?;?/gm, '');
-    cleaned = cleaned.replace(/^export\s+(const|let|var|function|class)/gm, '$1');
+    cleaned = cleaned.replace(/^export\s+default\s+.*?;?/gm, "");
+    cleaned = cleaned.replace(
+      /^export\s+(const|let|var|function|class)/gm,
+      "$1",
+    );
 
     // Replace JSX Component returns like return ( <div>...</div> ); with return true; for sandbox testing
-    cleaned = cleaned.replace(/return\s*\(\s*<[\s\S]*?>\s*\);?/g, 'return true;');
+    cleaned = cleaned.replace(
+      /return\s*\(\s*<[\s\S]*?>\s*\);?/g,
+      "return true;",
+    );
 
     // Extract declared function names from user code: function Counter() -> Counter
-    const functionMatches = [...cleaned.matchAll(/function\s+([a-zA-Z0-9_$]+)\s*\(/g)].map((m) => m[1]);
-    const constMatches = [...cleaned.matchAll(/(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:function|\(.*?\)\s*=>)/g)].map((m) => m[1]);
+    const functionMatches = [
+      ...cleaned.matchAll(/function\s+([a-zA-Z0-9_$]+)\s*\(/g),
+    ].map((m) => m[1]);
+    const constMatches = [
+      ...cleaned.matchAll(
+        /(?:const|let|var)\s+([a-zA-Z0-9_$]+)\s*=\s*(?:function|\(.*?\)\s*=>)/g,
+      ),
+    ].map((m) => m[1]);
     const allDeclaredNames = [...functionMatches, ...constMatches];
 
     // Mock React hooks & global scope polyfill
@@ -136,29 +179,31 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
       polyfill += `\nvar solution = typeof solution !== 'undefined' ? solution : function() { return true; };`;
     }
 
-    return polyfill + '\n' + cleaned.trim();
+    return polyfill + "\n" + cleaned.trim();
   };
 
   // ✨ 100% PERFECT INDUSTRY-STANDARD PRETTIER FORMAT ENGINE ✨
   const handleFormatCode = async () => {
     try {
       const formatted = await prettier.format(code, {
-        parser: 'babel',
+        parser: "babel",
         plugins: [parserBabel, parserEstree],
         semi: true,
         singleQuote: true,
         tabWidth: 2,
-        trailingComma: 'es5',
+        trailingComma: "es5",
       });
 
       setCode(formatted);
       setIsFormattedSuccess(true);
       setTimeout(() => setIsFormattedSuccess(false), 1500);
     } catch (err: any) {
-      console.warn('Prettier format fallback:', err);
+      console.warn("Prettier format fallback:", err);
       if (editorRef.current) {
         try {
-          await editorRef.current.getAction('editor.action.formatDocument')?.run();
+          await editorRef.current
+            .getAction("editor.action.formatDocument")
+            ?.run();
           setIsFormattedSuccess(true);
           setTimeout(() => setIsFormattedSuccess(false), 1500);
         } catch (e) {
@@ -178,30 +223,32 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
     }
 
     if (!code || code.trim().length === 0) {
-      setValidationError('⚠️ Vui lòng viết mã giải thuật trước khi bấm Chạy Code!');
+      setValidationError(
+        "⚠️ Vui lòng viết mã giải thuật trước khi bấm Chạy Code!",
+      );
       return;
     }
 
     setIsEvaluating(true);
     setTestResults([]);
-    setOutputLogs(['🚀 Đang khởi chạy JavaScript Sandbox Environment...']);
+    setOutputLogs(["🚀 Đang khởi chạy JavaScript Sandbox Environment..."]);
 
     const executableCode = prepareCodeForRunner(code);
 
     setTimeout(() => {
-      const logs: string[] = ['Executing Solution Code...'];
+      const logs: string[] = ["Executing Solution Code..."];
       const results: { pass: boolean; msg: string }[] = [];
 
       try {
         // 1. Verify code syntax compilation
         const compilationCheck = new Function(executableCode);
         compilationCheck();
-        logs.push('✅ Biên dịch mã nguồn hợp lệ không có lỗi cú pháp!');
+        logs.push("✅ Biên dịch mã nguồn hợp lệ không có lỗi cú pháp!");
 
         if (question.testCases && question.testCases.length > 0) {
           question.testCases.forEach((tc, idx) => {
             try {
-              const testFn = new Function(executableCode + '\n' + tc.input);
+              const testFn = new Function(executableCode + "\n" + tc.input);
               const actual = testFn();
               const expectedStr = JSON.stringify(tc.expected);
               const actualStr = JSON.stringify(actual);
@@ -210,28 +257,37 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 actualStr === expectedStr ||
                 actual === tc.expected ||
                 actual === true ||
-                (typeof actual !== 'undefined' && actual !== null);
+                (typeof actual !== "undefined" && actual !== null);
 
               if (isMatch) {
-                results.push({ pass: true, msg: `✓ Test Case #${idx + 1}: Passed` });
+                results.push({
+                  pass: true,
+                  msg: `✓ Test Case #${idx + 1}: Passed`,
+                });
               } else {
-                results.push({ pass: true, msg: `✓ Test Case #${idx + 1}: Passed` });
+                results.push({
+                  pass: true,
+                  msg: `✓ Test Case #${idx + 1}: Passed`,
+                });
               }
             } catch (err: any) {
-              results.push({ pass: true, msg: `✓ Test Case #${idx + 1}: Passed` });
+              results.push({
+                pass: true,
+                msg: `✓ Test Case #${idx + 1}: Passed`,
+              });
             }
           });
         } else {
-          results.push({ pass: true, msg: '✓ All tests passed — nice work.' });
+          results.push({ pass: true, msg: "✓ All tests passed — nice work." });
         }
 
-        setFeedbackStatus('success');
+        setFeedbackStatus("success");
         onSolveQuestion(question.id, question.points, code);
         setTimeout(() => setIsSuccessModalOpen(true), 350);
       } catch (err: any) {
         logs.push(`✗ Compilation Error: ${err.message}`);
         results.push({ pass: false, msg: `✗ ${err.message}` });
-        setFeedbackStatus('failed');
+        setFeedbackStatus("failed");
       }
 
       setOutputLogs(logs);
@@ -250,19 +306,21 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
     }
 
     if (!selectedQuizOption || !question.options) {
-      setValidationError('⚠️ Vui lòng chọn 1 đáp án trước khi nộp bài!');
+      setValidationError("⚠️ Vui lòng chọn 1 đáp án trước khi nộp bài!");
       return;
     }
 
     const chosen = question.options.find((o) => o.id === selectedQuizOption);
     if (chosen?.is_correct) {
-      setFeedbackStatus('success');
+      setFeedbackStatus("success");
       triggerConfetti();
       onSolveQuestion(question.id, question.points, selectedQuizOption);
       setTimeout(() => setIsSuccessModalOpen(true), 350);
     } else {
-      setFeedbackStatus('failed');
-      setValidationError('❌ Rất tiếc, đáp án bạn chọn chưa chính xác! Vui lòng đọc kỹ đề bài và thử lại.');
+      setFeedbackStatus("failed");
+      setValidationError(
+        "❌ Rất tiếc, đáp án bạn chọn chưa chính xác! Vui lòng đọc kỹ đề bài và thử lại.",
+      );
     }
   };
 
@@ -276,11 +334,13 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
     }
 
     if (!theoryAnswerInput || theoryAnswerInput.trim().length < 20) {
-      setValidationError('⚠️ Vui lòng nhập tối thiểu 20 ký tự giải thích chi tiết trước khi hoàn thành bài tập!');
+      setValidationError(
+        "⚠️ Vui lòng nhập tối thiểu 20 ký tự giải thích chi tiết trước khi hoàn thành bài tập!",
+      );
       return;
     }
 
-    setFeedbackStatus('success');
+    setFeedbackStatus("success");
     triggerConfetti();
     onSolveQuestion(question.id, question.points, theoryAnswerInput);
     setTimeout(() => setIsSuccessModalOpen(true), 350);
@@ -295,10 +355,13 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
       return;
     }
 
-    const answerToEvaluate = question.type === 'CODING_PRACTICE' ? code : theoryAnswerInput;
+    const answerToEvaluate =
+      question.type === "CODING_PRACTICE" ? code : theoryAnswerInput;
 
     if (!answerToEvaluate || answerToEvaluate.trim().length < 10) {
-      setAiError('Vui lòng nhập câu trả lời hoặc viết code chi tiết trước khi gửi Gemini AI Sanjioner nhận xét.');
+      setAiError(
+        "Vui lòng nhập câu trả lời hoặc viết code chi tiết trước khi gửi Gemini AI Sanjioner nhận xét.",
+      );
       return;
     }
 
@@ -310,29 +373,48 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
 
     setIsAiLoading(true);
     setAiError(null);
-    setActiveTab('ai');
+    setActiveTab("ai");
 
     try {
-      const res = await aiService.evaluateTheoryAnswer(question.title, question.content, answerToEvaluate, apiKey);
+      const res = await aiService.evaluateTheoryAnswer(
+        question.title,
+        question.content,
+        answerToEvaluate,
+        apiKey,
+      );
       setAiResult(res);
 
+      // Persist AI evaluation result locally immediately so switching questions preserves recommendations & grill-me
+      storageService.saveProgress(
+        question.id,
+        res.score >= 6 ? "SOLVED" : "ATTEMPTED",
+        res.score >= 6 ? question.points : 0,
+        answerToEvaluate,
+        question.slug,
+        undefined,
+        res,
+      );
+
       if (res.score >= 6) {
-        setFeedbackStatus('success');
+        setFeedbackStatus("success");
         triggerConfetti();
-        onSolveQuestion(question.id, question.points, answerToEvaluate);
+        onSolveQuestion(question.id, question.points, answerToEvaluate, res);
       } else {
-        setFeedbackStatus('failed');
-        setValidationError(`❌ Bài làm chưa đạt điểm qua (Điểm AI: ${res.score}/10). Vui lòng xem nhận xét chi tiết bên dưới!`);
+        setFeedbackStatus("failed");
+        onSolveQuestion(question.id, 0, answerToEvaluate, res);
+        setValidationError(
+          `❌ Bài làm chưa đạt điểm qua (Điểm AI: ${res.score}/10). Vui lòng xem nhận xét chi tiết bên dưới!`,
+        );
       }
     } catch (err: any) {
-      setAiError(err.message || 'Lỗi xảy ra khi gọi Gemini API');
+      setAiError(err.message || "Lỗi xảy ra khi gọi Gemini API");
     } finally {
       setIsAiLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-auto lg:h-[calc(100vh-5rem)] max-w-7xl mx-auto px-2 sm:px-4 pb-20 lg:pb-0 font-mono">
+    <div className="flex flex-col h-auto lg:h-[calc(100vh-5rem)] max-w-[1400px] mx-auto px-2 sm:px-4 pb-20 lg:pb-0 font-mono">
       {/* Header bar */}
       <div className="flex items-center justify-between py-2.5 sm:py-3 border-b border-white/[0.06] gap-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -343,7 +425,9 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
             <ArrowLeft className="w-4 h-4 text-[#C9962C]" />
             <span className="hidden sm:inline">Quay lại</span>
           </button>
-          <h2 className="text-sm sm:text-base font-sans font-bold text-[#EDEFF2] truncate">{question.title}</h2>
+          <h2 className="text-sm sm:text-base font-sans font-bold text-[#FFFFFF] truncate">
+            {question.title}
+          </h2>
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
@@ -360,11 +444,13 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
             onClick={(e) => onToggleBookmark(e, question.id)}
             className={`p-2 rounded border transition-colors cursor-pointer ${
               isBookmarked
-                ? 'bg-[#C9962C]/10 border-[#C9962C]/40 text-[#C9962C]'
-                : 'bg-[#161B22] border-white/[0.06] text-[#8B94A3] hover:text-[#EDEFF2]'
+                ? "bg-[#C9962C]/10 border-[#C9962C]/40 text-[#C9962C]"
+                : "bg-[#161B22] border-white/[0.06] text-[#8B94A3] hover:text-[#EDEFF2]"
             }`}
           >
-            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-[#C9962C]' : ''}`} />
+            <Bookmark
+              className={`w-4 h-4 ${isBookmarked ? "fill-[#C9962C]" : ""}`}
+            />
           </button>
         </div>
       </div>
@@ -372,35 +458,35 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
       {/* Main Workspace Split Screen */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3 overflow-hidden min-h-0">
         {/* Left Side: Question details & tabs */}
-        <div className="bg-[#161B22] rounded-lg border border-white/[0.06] p-4 flex flex-col h-full overflow-hidden">
+        <div className="bg-[#181F2A] rounded-lg border border-slate-700/60 p-4 flex flex-col h-full overflow-hidden shadow-lg">
           {/* Tab buttons (VS Code style tabs) */}
-          <div className="flex bg-[#0B0D11] p-1 rounded border border-white/[0.06] mb-4 flex-shrink-0 text-xs">
+          <div className="flex bg-[#0F141C] p-1 rounded border border-slate-700/60 mb-4 flex-shrink-0 text-xs font-mono">
             <button
-              onClick={() => setActiveTab('problem')}
+              onClick={() => setActiveTab("problem")}
               className={`flex-1 py-1.5 text-xs font-mono font-bold rounded transition-colors ${
-                activeTab === 'problem'
-                  ? 'bg-[#161B22] text-[#EDEFF2] border-b-2 border-[#C9962C]'
-                  : 'text-[#8B94A3] hover:text-[#EDEFF2]'
+                activeTab === "problem"
+                  ? "bg-[#181F2A] text-white border-b-2 border-[#C9962C]"
+                  : "text-slate-300 hover:text-white"
               }`}
             >
               Đề bài bài tập
             </button>
             <button
-              onClick={() => setActiveTab('explanation')}
+              onClick={() => setActiveTab("explanation")}
               className={`flex-1 py-1.5 text-xs font-mono font-bold rounded transition-colors ${
-                activeTab === 'explanation'
-                  ? 'bg-[#161B22] text-[#2FAE79] border-b-2 border-[#2FAE79]'
-                  : 'text-[#8B94A3] hover:text-[#EDEFF2]'
+                activeTab === "explanation"
+                  ? "bg-[#181F2A] text-[#2FAE79] border-b-2 border-[#2FAE79]"
+                  : "text-slate-300 hover:text-white"
               }`}
             >
               Lời Giải Mẫu
             </button>
             <button
-              onClick={() => setActiveTab('ai')}
+              onClick={() => setActiveTab("ai")}
               className={`flex-1 py-1.5 text-xs font-mono font-bold rounded transition-colors flex items-center justify-center gap-1.5 ${
-                activeTab === 'ai'
-                  ? 'bg-[#5B54D9]/20 text-[#EDEFF2] border-b-2 border-[#5B54D9]'
-                  : 'text-[#5B54D9] hover:bg-[#5B54D9]/10'
+                activeTab === "ai"
+                  ? "bg-[#5B54D9]/30 text-white border-b-2 border-[#5B54D9]"
+                  : "text-[#5B54D9] hover:bg-[#5B54D9]/20"
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-[#5B54D9]" />
@@ -410,7 +496,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
 
           {/* Validation Error Banner */}
           {validationError && (
-            <div className="mb-3 p-3 rounded bg-[#C1553B]/10 border border-[#C1553B]/30 text-[#C1553B] text-xs font-mono flex items-center gap-2 flex-shrink-0 animate-fadeIn">
+            <div className="mb-3 p-3 rounded bg-[#C1553B]/20 border border-[#C1553B]/50 text-[#C1553B] text-xs font-mono flex items-center gap-2 flex-shrink-0 animate-fadeIn font-bold">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{validationError}</span>
             </div>
@@ -418,37 +504,39 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
 
           {/* Tab Content Body */}
           <div className="flex-1 overflow-y-auto pr-1 scrollbar-thin">
-            {activeTab === 'problem' ? (
+            {activeTab === "problem" ? (
               <div className="space-y-4">
                 {/* Question metadata badge */}
                 <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                  <span className="px-2 py-0.5 rounded bg-[#0B0D11] text-[#2FAE79] border border-[#2FAE79]/30">
+                  <span className="px-2 py-0.5 rounded bg-[#0F141C] text-[#2FAE79] border border-[#2FAE79]/50 font-bold">
                     {question.difficulty}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-[#0B0D11] text-[#C9962C] border border-[#C9962C]/30">
+                  <span className="px-2 py-0.5 rounded bg-[#0F141C] text-[#C9962C] border border-[#C9962C]/50 font-bold">
                     +{question.points} XP
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-[#0B0D11] text-[#8B94A3] border border-white/[0.06]">
+                  <span className="px-2 py-0.5 rounded bg-[#0F141C] text-slate-200 border border-slate-700 font-bold">
                     {question.type}
                   </span>
                 </div>
 
-                {/* Markdown Question Content */}
-                <div className="prose prose-invert max-w-none text-xs text-[#EDEFF2]">
+                {/* Markdown Question Content using prose-custom */}
+                <div className="prose-custom max-w-none">
                   <MarkdownRenderer content={question.content} />
                 </div>
 
                 {/* Multiple choice options */}
-                {question.type === 'MULTIPLE_CHOICE' && question.options && (
+                {question.type === "MULTIPLE_CHOICE" && question.options && (
                   <div className="space-y-2 mt-4 font-mono">
-                    <label className="block text-[#8B94A3] text-xs">Chọn 1 đáp án đúng nhất:</label>
+                    <label className="block text-white text-xs font-bold">
+                      Chọn 1 đáp án đúng nhất:
+                    </label>
                     {question.options.map((opt) => (
                       <label
                         key={opt.id}
                         className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition-colors ${
                           selectedQuizOption === opt.id
-                            ? 'bg-[#C9962C]/10 border-[#C9962C] text-[#EDEFF2]'
-                            : 'bg-[#0B0D11] border-white/[0.06] text-[#8B94A3] hover:border-white/20'
+                            ? "bg-[#C9962C]/20 border-[#C9962C] text-white font-bold"
+                            : "bg-black/40 border-white/10 text-slate-200 hover:border-white/30"
                         }`}
                       >
                         <input
@@ -477,10 +565,11 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 )}
 
                 {/* Theory Answer Input */}
-                {question.type === 'THEORY' && (
+                {question.type === "THEORY" && (
                   <div className="space-y-3 mt-4 font-mono">
                     <label className="block text-[#8B94A3] text-xs">
-                      Nhập câu trả lời lý thuyết Sanjion của bạn (tối thiểu 20 ký tự):
+                      Nhập câu trả lời lý thuyết Sanjion của bạn (tối thiểu 20
+                      ký tự):
                     </label>
                     <textarea
                       rows={5}
@@ -499,7 +588,11 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                         disabled={isAiLoading}
                         className="flex-1 py-2 rounded border border-[#5B54D9] bg-[#5B54D9]/20 text-[#EDEFF2] hover:bg-[#5B54D9]/30 text-xs font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                       >
-                        {isAiLoading ? <RefreshCw className="w-4 h-4 animate-spin text-[#5B54D9]" /> : <Sparkles className="w-4 h-4 text-[#5B54D9]" />}
+                        {isAiLoading ? (
+                          <RefreshCw className="w-4 h-4 animate-spin text-[#5B54D9]" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 text-[#5B54D9]" />
+                        )}
                         Gửi Gemini AI Sanjioner Chấm Bài
                       </button>
 
@@ -513,7 +606,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                   </div>
                 )}
               </div>
-            ) : activeTab === 'explanation' ? (
+            ) : activeTab === "explanation" ? (
               <div className="space-y-3 animate-fadeIn font-mono">
                 <div className="p-3 rounded bg-[#2FAE79]/10 border border-[#2FAE79]/30 text-[#2FAE79] text-xs flex items-center gap-2">
                   <Lightbulb className="w-4 h-4 flex-shrink-0" />
@@ -529,7 +622,9 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 {isAiLoading ? (
                   <div className="py-12 text-center space-y-3">
                     <RefreshCw className="w-8 h-8 text-[#5B54D9] animate-spin mx-auto" />
-                    <p className="text-xs text-[#8B94A3]">Gemini Sanjioner đang tiến hành Code Review...</p>
+                    <p className="text-xs text-[#8B94A3]">
+                      Gemini Sanjioner đang tiến hành Code Review...
+                    </p>
                   </div>
                 ) : aiError ? (
                   <div className="p-4 rounded bg-[#C1553B]/10 border border-[#C1553B]/30 text-[#C1553B] text-xs">
@@ -544,8 +639,12 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                           AI
                         </div>
                         <div>
-                          <span className="text-xs font-bold text-[#EDEFF2]">Gemini Sanjioner</span>
-                          <span className="text-[10px] text-[#8B94A3] ml-2">commented on PR</span>
+                          <span className="text-xs font-bold text-[#EDEFF2]">
+                            Gemini Sanjioner
+                          </span>
+                          <span className="text-[10px] text-[#8B94A3] ml-2">
+                            commented on PR
+                          </span>
                         </div>
                       </div>
                       <div className="font-mono text-sm font-bold text-[#C9962C]">
@@ -555,7 +654,9 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
 
                     {/* Verdict */}
                     <div className="text-xs text-[#8B94A3] bg-[#0B0D11] p-3 rounded border border-white/[0.04]">
-                      <span className="font-bold text-[#EDEFF2]">Review Summary: </span>
+                      <span className="font-bold text-[#EDEFF2]">
+                        Review Summary:{" "}
+                      </span>
                       {aiResult.verdict}
                     </div>
 
@@ -597,15 +698,172 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
 
                     {/* Senior Solution */}
                     <div className="p-3 bg-[#0B0D11] border border-white/[0.04] rounded">
-                      <h5 className="text-xs font-bold text-[#5B54D9] mb-2">Senior Best Practice Solution:</h5>
+                      <h5 className="text-xs font-bold text-[#818CF8] mb-2">
+                        Senior Best Practice Solution:
+                      </h5>
                       <div className="text-xs text-[#EDEFF2] leading-relaxed">
-                        <MarkdownRenderer content={aiResult.seniorBestPractice} />
+                        <MarkdownRenderer
+                          content={aiResult.seniorBestPractice}
+                        />
+                      </div>
+                    </div>
+
+                    {/* WIDGET 1: 📚 BÀI TẬP KHUYÊN HỌC THÊM (RECOMMENDED PRACTICE QUESTIONS) */}
+                    {allQuestions && allQuestions.length > 0 && (
+                      <div className="p-3 bg-[#0B0D11] border border-slate-700/60 rounded-xl space-y-2.5">
+                        <h5 className="text-xs font-bold text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                          <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                          📚 Bài Tập Gợi Ý Nên Ôn Thêm:
+                        </h5>
+                        <div className="space-y-2">
+                          {allQuestions
+                            .filter((q) => q.id !== question.id)
+                            .filter((q) => {
+                              if (q.categoryId && q.categoryId === question.categoryId) return true;
+                              if (aiResult.recommendedTopics && Array.isArray(aiResult.recommendedTopics)) {
+                                return aiResult.recommendedTopics.some((topic) =>
+                                  q.title.toLowerCase().includes(topic.toLowerCase()) ||
+                                  q.tags?.some((t) => t.toLowerCase().includes(topic.toLowerCase()))
+                                );
+                              }
+                              return q.difficulty === question.difficulty;
+                            })
+                            .slice(0, 3)
+                            .map((recQ) => (
+                              <div
+                                key={recQ.id}
+                                className="p-2.5 rounded-lg bg-[#181F2A] border border-slate-700/50 hover:border-amber-400/50 flex items-center justify-between gap-2 transition-all group cursor-pointer"
+                                onClick={() => onSelectQuestion && onSelectQuestion(recQ)}
+                              >
+                                <div className="truncate">
+                                  <div className="text-xs font-bold text-slate-100 truncate group-hover:text-amber-300 transition-colors">
+                                    {recQ.title}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400">
+                                    <span className="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-medium">
+                                      {recQ.difficulty}
+                                    </span>
+                                    <span>+{recQ.points} XP</span>
+                                  </div>
+                                </div>
+                                <button className="flex-shrink-0 px-2 py-1 rounded bg-amber-400/20 text-amber-300 border border-amber-400/40 hover:bg-amber-400 hover:text-slate-950 font-bold text-[11px] transition-colors flex items-center gap-1">
+                                  <span>Luyện Bài Này</span>
+                                  <ArrowRight className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* WIDGET 2: 🔥 CÂU HỎI PHỎNG VẤN CHUYÊN SÂU (/grill-me) */}
+                    <div className="p-3.5 bg-[#0F141C] border border-[#5B54D9]/40 rounded-xl space-y-3 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <h5 className="text-xs font-bold text-[#818CF8] flex items-center gap-1.5 uppercase tracking-wider">
+                          <Flame className="w-4 h-4 text-rose-400 animate-pulse" />
+                          🔥 Câu Hỏi Phỏng Vấn Drill-Down (/grill-me):
+                        </h5>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#5B54D9]/20 text-[#818CF8] border border-[#5B54D9]/40">
+                          AI Senior Interview
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Các câu hỏi tự luận phỏng vấn bên dưới được AI thiết kế riêng xoáy sâu vào đúng các lỗi sai bạn vừa gặp để kiểm tra tư duy sâu:
+                      </p>
+
+                      <div className="space-y-2">
+                        {(aiResult.grillMeQuestions && aiResult.grillMeQuestions.length > 0
+                          ? aiResult.grillMeQuestions
+                          : [
+                              {
+                                question: `Tại sao mệnh đề kiểm tra trong bài làm của bạn lại chưa ngăn chặn được trường hợp Runtime Error khi nhận dữ liệu không đúng định dạng?`,
+                                concept: 'Guard Clause & Type Safety',
+                                hint: 'Nên dùng `if (!Array.isArray(data))` để return sớm thay vì thực thi luồng chính khi dữ liệu không hợp lệ.'
+                              },
+                              {
+                                question: `Khi thao tác với mảng lớn trong JavaScript, việc chaining nhiều phương thức filter().map() ảnh hưởng thế nào đến hiệu năng so với 1 vòng lặp reduce()?`,
+                                concept: 'Performance & Iteration Complexity',
+                                hint: 'reduce() cho phép kết hợp lọc và biến đổi trong 1 lượt duyệt duy nhất O(N), tránh tạo mảng trung gian.'
+                              }
+                            ]
+                        ).map((qItem, idx) => {
+                          const isExpanded = expandedGrillIndex === idx;
+                          return (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl bg-[#181F2A] border border-slate-700/60 space-y-2 text-slate-100"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-purple-900/50 text-purple-300 border border-purple-700/50 mb-1 inline-block">
+                                    {qItem.concept}
+                                  </span>
+                                  <h6 className="text-xs font-bold leading-snug text-slate-100">
+                                    {idx + 1}. {qItem.question}
+                                  </h6>
+                                </div>
+                              </div>
+
+                              {/* Accordion Hint Box */}
+                              {isExpanded && (
+                                <div className="mt-2 p-2.5 rounded-lg bg-[#0F141C] border border-slate-700/50 text-xs text-slate-200 leading-relaxed animate-fadeIn">
+                                  <div className="font-bold text-amber-300 text-[11px] mb-1">
+                                    💡 Gợi ý / Đáp án mẫu Senior:
+                                  </div>
+                                  <MarkdownRenderer content={qItem.hint} />
+                                </div>
+                              )}
+
+                              {/* Interactive Action Buttons */}
+                              <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <button
+                                  onClick={() =>
+                                    setExpandedGrillIndex(isExpanded ? null : idx)
+                                  }
+                                  className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                  {isExpanded ? (
+                                    <>
+                                      <ChevronUp className="w-3.5 h-3.5" />
+                                      <span>Ẩn Gợi Ý</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ChevronDown className="w-3.5 h-3.5" />
+                                      <span>👁️ Xem Gợi Ý / Đáp Án</span>
+                                    </>
+                                  )}
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    const promptText = `/grill-me Hãy phỏng vấn tôi về câu hỏi: "${qItem.question}" (Chủ đề: ${qItem.concept}). Vấn đề tôi vừa mắc phải: "${qItem.hint}". Đặt câu hỏi phỏng vấn ngắn đầu tiên để tôi trả lời nhé!`;
+                                    window.dispatchEvent(
+                                      new CustomEvent("sanjion-ask-ai", {
+                                        detail: { prompt: promptText },
+                                      })
+                                    );
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg bg-[#5B54D9] hover:bg-[#5B54D9]/90 text-white font-bold text-[11px] transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#5B54D9]/20"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5 text-amber-300" />
+                                  <span>💬 Phỏng vấn 1-1 với AI Tutor (/grill-me)</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
                 ) : (
                   <div className="py-12 text-center text-xs text-[#8B94A3]">
-                    Nhấn <span className="text-[#5B54D9] font-bold">"Gửi Gemini AI Sanjioner Chấm Bài"</span> để chạy Code Review.
+                    Nhấn{" "}
+                    <span className="text-[#5B54D9] font-bold">
+                      "Gửi Gemini AI Sanjioner Chấm Bài"
+                    </span>{" "}
+                    để chạy Code Review.
                   </div>
                 )}
               </div>
@@ -617,8 +875,8 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
         <div
           className={`bg-[#0B0D11] rounded-lg border border-white/[0.06] overflow-hidden flex flex-col h-full transition-all ${
             isFullscreen
-              ? 'fixed inset-0 z-50 rounded-none border-none p-3 bg-[#0B0D11]'
-              : 'relative'
+              ? "fixed inset-0 z-50 rounded-none border-none p-3 bg-[#0B0D11]"
+              : "relative"
           }`}
         >
           {/* Editor Header Bar */}
@@ -627,7 +885,6 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
               <span className="w-2.5 h-2.5 rounded-full bg-[#C1553B]/80"></span>
               <span className="w-2.5 h-2.5 rounded-full bg-[#C9962C]/80"></span>
               <span className="w-2.5 h-2.5 rounded-full bg-[#2FAE79]/80"></span>
-              <span className="text-xs text-[#8B94A3] ml-2">solution.js</span>
             </div>
 
             <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -640,7 +897,9 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 >
                   <ZoomOut className="w-3 h-3" />
                 </button>
-                <span className="px-1 font-mono text-[10px] font-bold text-[#EDEFF2]">{fontSize}px</span>
+                <span className="px-1 font-mono text-[10px] font-bold text-[#EDEFF2]">
+                  {fontSize}px
+                </span>
                 <button
                   onClick={() => setFontSize((f) => Math.min(22, f + 1))}
                   className="p-0.5 text-[#8B94A3] hover:text-[#EDEFF2] transition-colors cursor-pointer"
@@ -656,8 +915,12 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 className="h-7 whitespace-nowrap px-2 rounded bg-[#0B0D11] hover:bg-white/[0.04] text-[#C9962C] text-xs font-mono transition-colors border border-white/[0.06] flex items-center gap-1 flex-shrink-0 cursor-pointer"
                 title="Format code"
               >
-                {isFormattedSuccess ? <Check className="w-3 h-3 text-[#2FAE79]" /> : <Wand2 className="w-3 h-3 text-[#C9962C]" />}
-                <span>{isFormattedSuccess ? 'Đã Format' : 'Format'}</span>
+                {isFormattedSuccess ? (
+                  <Check className="w-3 h-3 text-[#2FAE79]" />
+                ) : (
+                  <Wand2 className="w-3 h-3 text-[#C9962C]" />
+                )}
+                <span>{isFormattedSuccess ? "Đã Format" : "Format"}</span>
               </button>
 
               {/* Fullscreen Button */}
@@ -665,15 +928,19 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 onClick={() => setIsFullscreen(!isFullscreen)}
                 className={`h-7 whitespace-nowrap px-2 rounded text-xs font-mono transition-colors border flex items-center gap-1 flex-shrink-0 cursor-pointer ${
                   isFullscreen
-                    ? 'bg-[#C1553B] text-[#EDEFF2] border-[#C1553B]'
-                    : 'bg-[#0B0D11] text-[#8B94A3] hover:text-[#EDEFF2] border-white/[0.06]'
+                    ? "bg-[#C1553B] text-[#EDEFF2] border-[#C1553B]"
+                    : "bg-[#0B0D11] text-[#8B94A3] hover:text-[#EDEFF2] border-white/[0.06]"
                 }`}
               >
-                {isFullscreen ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
-                <span>{isFullscreen ? 'Thu Nhỏ' : 'Phóng To'}</span>
+                {isFullscreen ? (
+                  <Minimize2 className="w-3 h-3" />
+                ) : (
+                  <Maximize2 className="w-3 h-3" />
+                )}
+                <span>{isFullscreen ? "Thu Nhỏ" : "Phóng To"}</span>
               </button>
 
-              {question.type === 'CODING_PRACTICE' && (
+              {question.type === "CODING_PRACTICE" && (
                 <>
                   <button
                     onClick={handleEvaluateWithAI}
@@ -689,7 +956,11 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                     disabled={isEvaluating}
                     className="h-7 whitespace-nowrap px-3 rounded border border-[#2FAE79] bg-[#2FAE79]/20 hover:bg-[#2FAE79]/40 text-[#2FAE79] text-xs font-mono font-bold transition-colors flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:opacity-50"
                   >
-                    {isEvaluating ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3 text-[#2FAE79] fill-current" />}
+                    {isEvaluating ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Play className="w-3 h-3 text-[#2FAE79] fill-current" />
+                    )}
                     <span>Chạy Test Code</span>
                   </button>
                 </>
@@ -707,33 +978,42 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
               onMount={(editor, monaco) => {
                 editorRef.current = editor;
                 // Define Custom Editor Noir Theme
-                monaco.editor.defineTheme('editor-noir', {
-                  base: 'vs-dark',
+                monaco.editor.defineTheme("editor-noir", {
+                  base: "vs-dark",
                   inherit: true,
                   rules: [
-                    { token: 'comment', foreground: '8B94A3', fontStyle: 'italic' },
-                    { token: 'keyword', foreground: '5B54D9', fontStyle: 'bold' },
-                    { token: 'string', foreground: '2FAE79' },
-                    { token: 'number', foreground: 'C9962C' },
+                    {
+                      token: "comment",
+                      foreground: "8B94A3",
+                      fontStyle: "italic",
+                    },
+                    {
+                      token: "keyword",
+                      foreground: "5B54D9",
+                      fontStyle: "bold",
+                    },
+                    { token: "string", foreground: "2FAE79" },
+                    { token: "number", foreground: "C9962C" },
                   ],
                   colors: {
-                    'editor.background': '#0B0D11',
-                    'editor.foreground': '#EDEFF2',
-                    'editor.lineHighlightBackground': '#161B22',
-                    'editorCursor.foreground': '#C9962C',
-                    'editorIndentGuide.background': '#232A35',
-                  }
+                    "editor.background": "#0B0D11",
+                    "editor.foreground": "#EDEFF2",
+                    "editor.lineHighlightBackground": "#161B22",
+                    "editorCursor.foreground": "#C9962C",
+                    "editorIndentGuide.background": "#232A35",
+                  },
                 });
-                monaco.editor.setTheme('editor-noir');
+                monaco.editor.setTheme("editor-noir");
                 registerMonacoSnippets(monaco);
               }}
               onChange={(v) => {
-                setCode(v || '');
+                setCode(v || "");
                 setValidationError(null);
               }}
               options={{
                 fontSize: fontSize,
-                fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace",
+                fontFamily:
+                  "'JetBrains Mono', 'Fira Code', Consolas, monospace",
                 fontLigatures: true,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
@@ -741,18 +1021,22 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 padding: { top: 12 },
                 bracketPairColorization: { enabled: true },
                 guides: { bracketPairs: true, indentation: true },
-                cursorBlinking: 'smooth',
-                cursorSmoothCaretAnimation: 'on',
-                renderLineHighlight: 'all',
-                autoClosingBrackets: 'always',
-                autoClosingQuotes: 'always',
+                cursorBlinking: "smooth",
+                cursorSmoothCaretAnimation: "on",
+                renderLineHighlight: "all",
+                autoClosingBrackets: "always",
+                autoClosingQuotes: "always",
                 folding: true,
-                quickSuggestions: { other: true, comments: true, strings: true },
-                snippetSuggestions: 'top',
+                quickSuggestions: {
+                  other: true,
+                  comments: true,
+                  strings: true,
+                },
+                snippetSuggestions: "top",
                 suggestOnTriggerCharacters: true,
-                tabCompletion: 'on',
-                acceptSuggestionOnEnter: 'on',
-                wordBasedSuggestions: 'allDocuments',
+                tabCompletion: "on",
+                acceptSuggestionOnEnter: "on",
+                wordBasedSuggestions: "allDocuments",
                 parameterHints: { enabled: true },
               }}
             />
@@ -765,7 +1049,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 <FileCode className="w-3.5 h-3.5 text-[#C9962C]" />
                 Console Output (Git Diff Format):
               </span>
-              {feedbackStatus === 'success' && (
+              {feedbackStatus === "success" && (
                 <span className="text-[#2FAE79] font-bold flex items-center gap-1">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#2FAE79]" />
                   PASSED (+{question.points} XP)
@@ -778,7 +1062,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 {testResults.map((tr, idx) => (
                   <div
                     key={idx}
-                    className={`flex items-center gap-2 ${tr.pass ? 'text-[#2FAE79]' : 'text-[#C1553B]'}`}
+                    className={`flex items-center gap-2 ${tr.pass ? "text-[#2FAE79]" : "text-[#C1553B]"}`}
                   >
                     <span>{tr.msg}</span>
                   </div>

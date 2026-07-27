@@ -1,5 +1,5 @@
-import { UserProfile, UserProgress } from '../types';
-import { INITIAL_USER_PROFILE } from './mockData';
+import { Question, UserProfile, UserProgress } from '../types';
+import { INITIAL_USER_PROFILE, MOCK_QUESTIONS } from './mockData';
 
 const STORAGE_KEYS = {
   USER_PROFILE: 'fe_sanjion_v2_profile',
@@ -9,6 +9,17 @@ const STORAGE_KEYS = {
 };
 
 export const storageService = {
+  // --- Questions Cache ---
+  getQuestions(): Question[] {
+    try {
+      const localAi = localStorage.getItem('fe_sanjion_ai_questions');
+      const aiQs: Question[] = localAi ? JSON.parse(localAi) : [];
+      return [...aiQs, ...MOCK_QUESTIONS];
+    } catch (e) {
+      return MOCK_QUESTIONS;
+    }
+  },
+
   // --- Profile ---
   getProfile(): UserProfile {
     const data = localStorage.getItem(STORAGE_KEYS.USER_PROFILE);
@@ -74,7 +85,8 @@ export const storageService = {
     scoreEarned: number,
     userAnswer?: string,
     questionSlug?: string,
-    userId?: string
+    userId?: string,
+    aiResult?: any
   ): UserProgress {
     const prof = this.getProfile();
     const targetId = userId || prof.id;
@@ -87,10 +99,11 @@ export const storageService = {
       questionId,
       status: existing?.status === 'SOLVED' ? 'SOLVED' : status,
       score: existing?.score || (status === 'SOLVED' ? scoreEarned : 0),
-      userAnswer: userAnswer || existing?.userAnswer || '',
+      userAnswer: userAnswer !== undefined ? userAnswer : (existing?.userAnswer || ''),
       attemptsCount: (existing?.attemptsCount || 0) + 1,
       solvedAt: existing?.solvedAt || (status === 'SOLVED' ? new Date().toISOString() : undefined),
       lastAttemptAt: new Date().toISOString(),
+      aiResult: aiResult || existing?.aiResult,
     };
 
     all[questionId] = updated;

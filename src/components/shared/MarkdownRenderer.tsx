@@ -65,7 +65,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
         return (
           <code
             key={i}
-            className="bg-pink-100/90 border border-pink-200 text-pink-700 px-1.5 py-0.5 mx-0.5 rounded-lg font-mono text-[11px] font-semibold break-all"
+            className="bg-[#1E293B] border border-slate-600 text-amber-300 px-1.5 py-0.5 mx-0.5 rounded font-mono text-[11px] font-bold break-all inline-block shadow-sm"
           >
             {codeText}
           </code>
@@ -83,7 +83,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
           );
         }
         return (
-          <strong key={i} className="font-extrabold text-slate-900 mx-0.5">
+          <strong key={i} className="font-extrabold text-white mx-0.5">
             {boldText}
           </strong>
         );
@@ -105,7 +105,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
     });
   };
 
-  // ✨ ACCURATE CHARACTER-PRESERVING VS CODE SYNTAX HIGHLIGHTER WITH AUTO WORD WRAP ✨
+  // ✨ ACCURATE CHARACTER-PRESERVING VS CODE SYNTAX HIGHLIGHTER WITH BRIGHT VISIBLE COMMENTS & HIGH CONTRAST ✨
   const renderHighlightedCode = (codeText: string) => {
     const keywords = new Set([
       'function', 'let', 'const', 'var', 'return', 'async', 'await',
@@ -122,7 +122,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
     const lines = codeText.split('\n');
 
     return (
-      <pre className="font-mono text-xs leading-relaxed text-slate-200 whitespace-pre-wrap break-words select-text">
+      <pre className="font-mono text-xs leading-relaxed text-slate-100 whitespace-pre-wrap break-words select-text">
         <code>
           {lines.map((line, lineIdx) => {
             const tokens: React.ReactNode[] = [];
@@ -134,7 +134,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
             while ((m = masterRegex.exec(line)) !== null) {
               if (m.index > lastTokIndex) {
                 tokens.push(
-                  <span key={`un-${lastTokIndex}`} className="text-slate-300">
+                  <span key={`un-${lastTokIndex}`} className="text-slate-200">
                     {line.slice(lastTokIndex, m.index)}
                   </span>
                 );
@@ -146,27 +146,27 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
               if (/^\s+$/.test(tok)) {
                 tokens.push(<span key={tokKey}>{tok}</span>);
               } else if (tok.startsWith('//') || tok.startsWith('/*')) {
-                tokens.push(<span key={tokKey} className="text-slate-500 italic">{tok}</span>);
+                tokens.push(<span key={tokKey} className="text-slate-300 italic font-semibold">{tok}</span>);
               } else if (tok.startsWith('"') || tok.startsWith("'") || tok.startsWith('`')) {
-                tokens.push(<span key={tokKey} className="text-emerald-300 font-medium">{tok}</span>);
+                tokens.push(<span key={tokKey} className="text-emerald-400 font-bold">{tok}</span>);
               } else if (/^\d+(?:\.\d+)?$/.test(tok)) {
-                tokens.push(<span key={tokKey} className="text-amber-400 font-bold">{tok}</span>);
+                tokens.push(<span key={tokKey} className="text-amber-300 font-bold">{tok}</span>);
               } else if (keywords.has(tok)) {
                 tokens.push(<span key={tokKey} className="text-purple-400 font-bold">{tok}</span>);
               } else if (booleans.has(tok)) {
                 tokens.push(<span key={tokKey} className="text-rose-400 font-bold">{tok}</span>);
               } else if (builtins.has(tok)) {
-                tokens.push(<span key={tokKey} className="text-sky-400 font-bold">{tok}</span>);
+                tokens.push(<span key={tokKey} className="text-sky-300 font-bold">{tok}</span>);
               } else if (tok === '=>') {
                 tokens.push(<span key={tokKey} className="text-pink-400 font-black px-0.5">{tok}</span>);
               } else if (tok === '.') {
-                tokens.push(<span key={tokKey} className="text-slate-300 font-bold">{tok}</span>);
+                tokens.push(<span key={tokKey} className="text-slate-200 font-bold">{tok}</span>);
               } else if (/^[=+\-*\/%&|^!<>:]+$/.test(tok)) {
                 tokens.push(<span key={tokKey} className="text-pink-400 font-extrabold">{tok}</span>);
               } else if (/^[,;:(){}[\]]$/.test(tok)) {
-                tokens.push(<span key={tokKey} className="text-slate-400 font-bold">{tok}</span>);
+                tokens.push(<span key={tokKey} className="text-slate-300 font-bold">{tok}</span>);
               } else {
-                tokens.push(<span key={tokKey} className="text-slate-100">{tok}</span>);
+                tokens.push(<span key={tokKey} className="text-[#F8FAFC]">{tok}</span>);
               }
 
               lastTokIndex = m.index + tok.length;
@@ -174,7 +174,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
 
             if (lastTokIndex < line.length) {
               tokens.push(
-                <span key={`end-${lastTokIndex}`} className="text-slate-300">
+                <span key={`end-${lastTokIndex}`} className="text-slate-200">
                   {line.slice(lastTokIndex)}
                 </span>
               );
@@ -269,7 +269,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
             const trimmed = line.trim();
             if (!trimmed || trimmed === 'javascript') return null;
             return (
-              <p key={`pre-${idx}`} className="mb-1.5 leading-relaxed text-slate-700 font-medium">
+              <p key={`pre-${idx}`} className="mb-1.5 leading-relaxed text-slate-100 font-medium">
                 {renderParagraphWithInlineCode(line)}
               </p>
             );
@@ -277,8 +277,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
 
           {/* Unified Single Continuous Code Block */}
           {codeText && (
-            <div className="my-3 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-md">
-              <div className="flex items-center justify-between px-4 py-2 bg-slate-950 border-b border-slate-800 text-[11px] font-mono text-slate-400">
+            <div className="my-3 rounded-xl bg-[#0F141C] border border-slate-700/60 overflow-hidden shadow-md">
+              <div className="flex items-center justify-between px-4 py-2 bg-[#161C24] border-b border-slate-700/60 text-[11px] font-mono text-slate-300">
                 <span className="uppercase font-bold text-pink-400">javascript</span>
                 <button
                   onClick={() => handleCopyCode(codeText, 8888)}
@@ -313,12 +313,12 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
               return (
                 <div
                   key={`q-${idx}`}
-                  className="my-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 via-rose-50 to-pink-50 border border-amber-200/80 shadow-sm flex items-start gap-2.5 text-slate-900"
+                  className="my-3 p-3.5 rounded-xl bg-[#1E293B] border border-amber-500/50 shadow-md flex items-start gap-2.5 text-white"
                 >
-                  <div className="w-6 h-6 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center font-black flex-shrink-0 mt-0.5 shadow-sm">
-                    <HelpCircle className="w-4 h-4 text-slate-900" />
+                  <div className="w-6 h-6 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black flex-shrink-0 mt-0.5 shadow-sm">
+                    <HelpCircle className="w-4 h-4 text-slate-950" />
                   </div>
-                  <div className="font-extrabold text-xs sm:text-sm text-slate-900 leading-snug">
+                  <div className="font-bold text-xs sm:text-sm text-white leading-snug">
                     {cleanQuestionText}
                   </div>
                 </div>
@@ -326,7 +326,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
             }
 
             return (
-              <p key={`post-${idx}`} className="mb-1.5 leading-relaxed text-slate-700 font-medium">
+              <p key={`post-${idx}`} className="mb-1.5 leading-relaxed text-slate-100 font-medium">
                 {renderParagraphWithInlineCode(line)}
               </p>
             );
@@ -345,12 +345,12 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
         return (
           <div
             key={`q-${lineIdx}`}
-            className="my-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 via-rose-50 to-pink-50 border border-amber-200/80 shadow-sm flex items-start gap-2.5 text-slate-900"
+            className="my-3 p-3.5 rounded-xl bg-[#1E293B] border border-amber-500/50 shadow-md flex items-start gap-2.5 text-white"
           >
-            <div className="w-6 h-6 rounded-xl bg-amber-400 text-slate-900 flex items-center justify-center font-black flex-shrink-0 mt-0.5 shadow-sm">
-              <HelpCircle className="w-4 h-4 text-slate-900" />
+            <div className="w-6 h-6 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black flex-shrink-0 mt-0.5 shadow-sm">
+              <HelpCircle className="w-4 h-4 text-slate-950" />
             </div>
-            <div className="font-extrabold text-xs sm:text-sm text-slate-900 leading-snug">
+            <div className="font-bold text-xs sm:text-sm text-white leading-snug">
               {cleanQuestionText}
             </div>
           </div>
@@ -358,7 +358,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
       }
 
       return (
-        <p key={lineIdx} className="mb-1.5 leading-relaxed text-slate-700 font-medium">
+        <p key={lineIdx} className="mb-1.5 leading-relaxed text-slate-100 font-medium">
           {renderParagraphWithInlineCode(line)}
         </p>
       );
@@ -366,13 +366,13 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) =
   };
 
   return (
-    <div className="space-y-3 font-sans text-xs sm:text-sm text-slate-800">
+    <div className="space-y-3 font-sans text-xs sm:text-sm text-slate-100">
       {parts.map((part, index) => {
         if (part.type === 'code') {
           return (
-            <div key={index} className="my-3 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-md">
+            <div key={index} className="my-3 rounded-xl bg-[#0F141C] border border-slate-700/60 overflow-hidden shadow-md">
               {/* Explicit Code block header */}
-              <div className="flex items-center justify-between px-4 py-2 bg-slate-950 border-b border-slate-800 text-[11px] font-mono text-slate-400">
+              <div className="flex items-center justify-between px-4 py-2 bg-[#161C24] border-b border-slate-700/60 text-[11px] font-mono text-slate-300">
                 <span className="uppercase font-bold text-pink-400">{part.lang || 'javascript'}</span>
                 <button
                   onClick={() => handleCopyCode(part.text, index)}
