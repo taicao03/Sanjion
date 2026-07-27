@@ -121,22 +121,34 @@ export const authService = {
         }
       }
 
-      const highestPoints = Math.max(
-        profileData?.total_points || 0,
-        totalSolvedPoints,
-        localProf.totalPoints || 0
-      );
+      const isDeletedAccount = adminService.isUserDeleted(user.id) ||
+        (user.email && adminService.isUserDeleted(user.email)) ||
+        (finalUsername && adminService.isUserDeleted(finalUsername));
+
+      if (isDeletedAccount) {
+        adminService.removeDeletedUserIdentifier(user.id);
+        if (user.email) adminService.removeDeletedUserIdentifier(user.email);
+        if (finalUsername) adminService.removeDeletedUserIdentifier(finalUsername);
+      }
+
+      const highestPoints = isDeletedAccount
+        ? 0
+        : Math.max(
+            profileData?.total_points || 0,
+            totalSolvedPoints,
+            localProf.totalPoints || 0
+          );
 
       const profile: UserProfile = {
         id: user.id,
         username: finalUsername,
         fullName: finalFullName,
         avatarUrl: finalAvatarUrl,
-        streakCount: Math.max(profileData?.streak_count || 0, localProf.streakCount || 0, totalSolvedPoints > 0 ? 1 : 0),
+        streakCount: isDeletedAccount ? 0 : Math.max(profileData?.streak_count || 0, localProf.streakCount || 0, totalSolvedPoints > 0 ? 1 : 0),
         lastActiveDate: profileData?.last_active_date || new Date().toISOString().split('T')[0],
-        targetLevel: profileData?.target_level || 'Senior',
+        targetLevel: isDeletedAccount ? 'Junior' : (profileData?.target_level || 'Junior'),
         totalPoints: highestPoints,
-        role: profileData?.role || localProf.role || 'USER',
+        role: isDeletedAccount ? 'USER' : (profileData?.role || 'USER'),
         email: user.email,
         provider: detectedProvider,
       };

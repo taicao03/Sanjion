@@ -44,19 +44,63 @@ export const INITIAL_USERS: AdminUserItem[] = [
   },
 ];
 
+const DELETED_USERS_KEY = 'sanjion_deleted_users_blacklist_v2';
+
 export const adminService = {
+  getDeletedUserIdentifiers(): string[] {
+    try {
+      const stored = localStorage.getItem(DELETED_USERS_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  addDeletedUserIdentifier(identifier: string): void {
+    if (!identifier) return;
+    const deleted = this.getDeletedUserIdentifiers();
+    if (!deleted.includes(identifier)) {
+      deleted.push(identifier);
+      localStorage.setItem(DELETED_USERS_KEY, JSON.stringify(deleted));
+    }
+  },
+
+  removeDeletedUserIdentifier(identifier: string): void {
+    if (!identifier) return;
+    const deleted = this.getDeletedUserIdentifiers().filter(id => id !== identifier);
+    localStorage.setItem(DELETED_USERS_KEY, JSON.stringify(deleted));
+  },
+
+  isUserDeleted(identifier: string): boolean {
+    if (!identifier) return false;
+    const deleted = this.getDeletedUserIdentifiers();
+    return deleted.includes(identifier);
+  },
+
   getUsers(): AdminUserItem[] {
+    const deletedList = this.getDeletedUserIdentifiers();
+    let usersList: AdminUserItem[] = [];
+
     try {
       const stored = localStorage.getItem(LOCAL_STORAGE_USERS_KEY);
       if (stored) {
-        const parsed: AdminUserItem[] = JSON.parse(stored);
-        return parsed.filter(u => u.id !== 'guest' && u.username !== 'guest' && u.id !== '');
+        usersList = JSON.parse(stored);
+      } else {
+        usersList = [...INITIAL_USERS];
+        localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(INITIAL_USERS));
       }
     } catch (e) {
-      console.warn('Error reading admin users:', e);
+      usersList = [...INITIAL_USERS];
     }
-    localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(INITIAL_USERS));
-    return INITIAL_USERS;
+
+    return usersList.filter(u => 
+      u.id !== 'guest' && 
+      u.username !== 'guest' && 
+      u.id !== '' &&
+      !deletedList.includes(u.id) &&
+      !deletedList.includes(u.username) &&
+      (!u.email || !deletedList.includes(u.email))
+    );
   },
 
   saveUsers(users: AdminUserItem[]): void {
@@ -70,6 +114,23 @@ export const adminService = {
 
   saveOAuthAccount(profile: UserProfile): void {
     if (!profile || !profile.id || profile.id === 'guest' || profile.id === '') return;
+
+    const isWasDeleted = this.isUserDeleted(profile.id) || 
+      (profile.username && this.isUserDeleted(profile.username)) || 
+      (profile.email && this.isUserDeleted(profile.email));
+
+    if (isWasDeleted) {
+      // Remove from blacklist as user is registering anew
+      this.removeDeletedUserIdentifier(profile.id);
+      if (profile.username) this.removeDeletedUserIdentifier(profile.username);
+      if (profile.email) this.removeDeletedUserIdentifier(profile.email);
+
+      // FORCE RESET ROLE, POINTS & STREAK TO BRAND NEW USER STATE
+      profile.totalPoints = 0;
+      profile.streakCount = 0;
+      profile.role = 'USER';
+      profile.targetLevel = 'Junior';
+    }
 
     const users = this.getUsers();
     const existingIndex = users.findIndex(u => u.id === profile.id || (!!profile.email && u.email === profile.email));
@@ -85,7 +146,7 @@ export const adminService = {
       avatarUrl: profile.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.id}`,
       streakCount: profile.streakCount || 0,
       lastActiveDate: profile.lastActiveDate || new Date().toISOString().split('T')[0],
-      targetLevel: profile.targetLevel || 'Senior',
+      targetLevel: profile.targetLevel || 'Junior',
       totalPoints: profile.totalPoints || 0,
       role: profile.role || 'USER',
       email: profile.email || `${profile.username}@gmail.com`,
