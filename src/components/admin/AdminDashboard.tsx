@@ -24,7 +24,9 @@ import {
   Check,
   Trophy,
   ChevronDown,
-  X
+  X,
+  Award,
+  Edit3
 } from 'lucide-react';
 import { UserProfile, UserRole, Question } from '../../types';
 import { adminService, AdminUserItem } from '../../services/adminService';
@@ -236,6 +238,63 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     newRole: UserRole;
   } | null>(null);
   const [roleNotice, setRoleNotice] = useState<string | null>(null);
+
+  // User Points Editing States & Handlers
+  const [userForPointsEdit, setUserForPointsEdit] = useState<AdminUserItem | null>(null);
+  const [newPointsInput, setNewPointsInput] = useState<number>(0);
+
+  const isAnyAdminModalOpen = Boolean(
+    userToDelete ||
+    isAddUserModalOpen ||
+    roleChangePending ||
+    permissionErrorMsg ||
+    userForPointsEdit
+  );
+
+  useEffect(() => {
+    if (isAnyAdminModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAnyAdminModalOpen]);
+
+  const handleOpenPointsEdit = (user: AdminUserItem) => {
+    setUserForPointsEdit(user);
+    setNewPointsInput(user.totalPoints || 0);
+  };
+
+  const handleSaveUserPoints = async () => {
+    if (!userForPointsEdit) return;
+
+    const targetId = userForPointsEdit.id;
+    const points = Math.max(0, Math.floor(newPointsInput));
+
+    // Update local storage
+    adminService.updateUserPoints(targetId, points);
+
+    // Update Supabase Cloud DB
+    if (isConnected) {
+      await apiService.updateUserPointsInDatabase(targetId, points);
+    }
+
+    // Update state in Admin Dashboard list
+    setUsersList((prev) =>
+      prev.map((u) => (u.id === targetId ? { ...u, totalPoints: points } : u))
+    );
+
+    // If editing active profile, update profile in App.tsx
+    if (targetId === currentProfile.id && onProfileRoleChanged) {
+      onProfileRoleChanged(currentProfile.role || 'USER');
+    }
+
+    setRoleNotice(`✅ Đã cập nhật thành công điểm số cho [${userForPointsEdit.fullName}] thành ${points} pts!`);
+    setTimeout(() => setRoleNotice(null), 4000);
+    setUserForPointsEdit(null);
+  };
 
   const handleRoleChangeInitiate = (targetUser: AdminUserItem, newRole: UserRole) => {
     if (targetUser.role === newRole) return;
@@ -760,6 +819,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleOpenPointsEdit(user)}
+                              className="p-1.5 rounded-xl bg-[#0B0D11] border border-white/10 hover:bg-amber-500/20 hover:border-amber-500/40 text-amber-400 transition-colors cursor-pointer"
+                              title="Cập nhật điểm XP bài tập"
+                            >
+                              <Award className="w-4 h-4" />
+                            </button>
+
                             <button
                               onClick={() => handleToggleBlockUser(user.id, user.status || 'ACTIVE')}
                               className="p-1.5 rounded-xl bg-[#0B0D11] border border-white/10 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
@@ -1464,6 +1531,109 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 via-pink-600 to-amber-500 hover:from-rose-700 hover:to-pink-700 text-white font-black text-xs shadow-lg shadow-rose-600/20 cursor-pointer"
               >
                 Đã Hiểu & Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP: EDIT USER POINTS MODAL */}
+      {userForPointsEdit && (
+        <div className="fixed inset-0 z-[99999] overflow-y-auto bg-slate-950/80 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn font-mono">
+          <div className="bg-[#161B22] rounded-3xl shadow-2xl border border-amber-500/40 max-w-md w-full p-6 space-y-5 my-auto max-h-[90vh] overflow-y-auto animate-scaleUp text-white relative">
+            
+            {/* Header */}
+            <div className="flex items-center gap-3 border-b border-white/10 pb-3">
+              <div className="p-3 bg-amber-500/20 text-amber-400 rounded-2xl border border-amber-500/40">
+                <Award className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white font-sans">Cập Nhật Điểm XP Học Viên</h3>
+                <p className="text-xs text-slate-400 font-sans">Điều chỉnh điểm kinh nghiệm làm bài trực tiếp.</p>
+              </div>
+            </div>
+
+            {/* Target User Info Card */}
+            <div className="p-4 bg-[#0B0D11] rounded-2xl border border-white/10 space-y-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src={userForPointsEdit.avatarUrl}
+                  alt={userForPointsEdit.fullName}
+                  className="w-11 h-11 rounded-full object-cover ring-2 ring-white/10 flex-shrink-0"
+                />
+                <div>
+                  <p className="font-black text-white text-sm font-sans">{userForPointsEdit.fullName}</p>
+                  <p className="text-xs text-slate-400">@{userForPointsEdit.username} · {userForPointsEdit.email}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Points Input & Quick Adjust Buttons */}
+            <div className="space-y-3">
+              <label className="text-xs text-slate-300 font-bold block">
+                Điểm XP Hiện Tại: <span className="text-amber-400 font-mono text-sm">{userForPointsEdit.totalPoints || 0} pts</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  value={newPointsInput}
+                  onChange={(e) => setNewPointsInput(Number(e.target.value))}
+                  className="w-full bg-[#0B0D11] border border-amber-500/40 rounded-xl px-4 py-3 text-amber-300 font-mono font-bold text-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="Nhập số điểm..."
+                />
+                <span className="absolute right-4 top-3.5 text-xs text-slate-400 font-bold">XP</span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setNewPointsInput((prev) => prev + 50)}
+                  className="py-1.5 px-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                >
+                  +50 pts
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewPointsInput((prev) => prev + 100)}
+                  className="py-1.5 px-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                >
+                  +100 pts
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewPointsInput((prev) => prev + 500)}
+                  className="py-1.5 px-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                >
+                  +500 pts
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewPointsInput(0)}
+                  className="py-1.5 px-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Reset 0
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setUserForPointsEdit(null)}
+                className="px-4 py-2.5 rounded-xl border border-white/10 bg-[#0B0D11] text-slate-300 font-bold text-xs hover:bg-slate-800 cursor-pointer"
+              >
+                Hủy Thao Tác
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveUserPoints}
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 cursor-pointer flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                Lưu Điểm Mới
               </button>
             </div>
           </div>

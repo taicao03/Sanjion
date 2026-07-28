@@ -99,9 +99,22 @@ export const GenerateQuestionModal: React.FC<GenerateQuestionModalProps> = ({
     },
   };
 
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
   return (
     <>
-      <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex min-h-full items-center justify-center p-3 sm:p-6 animate-fadeIn">
+      <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
         <div className="bg-[#181F2A] border border-slate-700/60 rounded-2xl max-w-lg w-full p-5 sm:p-7 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto animate-scaleUp flex flex-col text-white font-mono">
           {/* Close Button */}
           <button

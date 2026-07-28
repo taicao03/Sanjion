@@ -173,6 +173,22 @@ export const adminService = {
     return true;
   },
 
+  updateUserPoints(userId: string, newPoints: number): boolean {
+    const users = this.getUsers();
+    const targetIndex = users.findIndex(u => u.id === userId);
+    if (targetIndex === -1) return false;
+
+    const validPoints = Math.max(0, Math.floor(newPoints));
+    users[targetIndex].totalPoints = validPoints;
+    this.saveUsers(users);
+
+    const currentProf = storageService.getProfile();
+    if (currentProf.id === userId) {
+      storageService.updateProfile({ totalPoints: validPoints });
+    }
+    return true;
+  },
+
   toggleUserStatus(userId: string, operatorRole: UserRole): boolean {
     if (operatorRole === 'USER') return false;
 

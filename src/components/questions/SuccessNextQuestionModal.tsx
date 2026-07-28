@@ -38,8 +38,21 @@ export const SuccessNextQuestionModal: React.FC<SuccessNextQuestionModalProps> =
     ? sameLevelQuestions[Math.floor(Math.random() * sameLevelQuestions.length)]
     : null;
 
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn font-mono">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-fadeIn font-mono">
       <div className="bg-[#181F2A] border border-slate-700/60 rounded-2xl max-w-md w-full p-6 sm:p-7 shadow-2xl relative text-center my-auto max-h-[90vh] overflow-y-auto animate-scaleUp text-white">
         {/* Close Button */}
         <button

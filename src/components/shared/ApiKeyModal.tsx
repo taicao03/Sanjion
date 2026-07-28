@@ -54,7 +54,7 @@ export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSav
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0B0D11]/90 flex min-h-full items-center justify-center p-4 sm:p-6 animate-fadeIn font-mono">
+    <div className="fixed inset-0 z-[9999] overflow-y-auto bg-[#0B0D11]/90 flex items-center justify-center p-4 sm:p-6 animate-fadeIn font-mono">
       <div className="bg-[#161B22] border border-white/[0.06] rounded-lg max-w-md w-full p-6 shadow-2xl relative my-auto max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}

@@ -177,6 +177,19 @@ export const apiService = {
     }
   },
 
+  // Update User Total Points in Supabase Database
+  async updateUserPointsInDatabase(userId: string, points: number): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(userId);
+    if (!isUuid) return false;
+    try {
+      const { error } = await supabase.from('user_profiles').update({ total_points: points }).eq('id', userId);
+      return !error;
+    } catch (err) {
+      return false;
+    }
+  },
+
   // Fetch Categories from Supabase DB or Fallback to Roadmap.sh Categories
   async getCategories(): Promise<Category[]> {
     if (cachedCategories && cachedCategories.length > 0) {
