@@ -891,16 +891,18 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              {/* Language Selector Dropdown */}
-              <div className="relative inline-block text-left font-mono">
+              {/* Language Selector Dropdown Button */}
+              <div className="relative flex-shrink-0 group">
                 <button
                   type="button"
                   onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-                  className="h-7 px-2 rounded bg-[#0B0D11] hover:bg-white/[0.06] text-[#C9962C] text-xs font-bold font-mono transition-all border border-[#C9962C]/40 flex items-center gap-1 cursor-pointer shadow-sm"
+                  className={`h-7 whitespace-nowrap px-2 rounded bg-[#0B0D11] hover:bg-white/[0.04] text-[#C9962C] text-xs font-mono transition-all border border-white/[0.06] flex items-center gap-1.5 cursor-pointer ${
+                    isLangDropdownOpen ? 'border-amber-500/50 bg-[#C9962C]/10' : ''
+                  }`}
                   title="Chọn ngôn ngữ lập trình (JS / TS / React / CSS / HTML)"
                 >
-                  <Code2 className="w-3.5 h-3.5 text-[#C9962C]" />
-                  <span className="uppercase font-mono font-black text-[11px]">
+                  <Code2 className="w-3.5 h-3.5 text-[#C9962C] flex-shrink-0" />
+                  <span className="max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden inline-block uppercase font-mono font-black text-[11px]">
                     {selectedLanguage === 'javascript'
                       ? 'JS'
                       : selectedLanguage === 'typescript'
@@ -911,7 +913,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                       ? 'CSS'
                       : 'HTML'}
                   </span>
-                  <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isLangDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
+                  <ChevronDown className={`w-3 h-3 text-slate-400 flex-shrink-0 transition-transform ${isLangDropdownOpen ? 'rotate-180 text-amber-400' : ''}`} />
                 </button>
 
                 {isLangDropdownOpen && (
@@ -945,55 +947,60 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
               </div>
 
               {/* Font Size Controls */}
-              <div className="h-7 flex items-center bg-[#0B0D11] rounded border border-white/[0.06] px-1 text-[11px] text-[#8B94A3] flex-shrink-0">
+              <div className="h-7 flex items-center bg-[#0B0D11] rounded border border-white/[0.06] px-1 text-[11px] text-[#8B94A3] flex-shrink-0 group" title={`Cỡ chữ hiện tại: ${fontSize}px`}>
                 <button
                   onClick={() => setFontSize((f) => Math.max(11, f - 1))}
-                  className="p-0.5 text-[#8B94A3] hover:text-[#EDEFF2] transition-colors cursor-pointer"
+                  className="p-1 text-[#8B94A3] hover:text-[#EDEFF2] transition-colors cursor-pointer"
                   title="Giảm cỡ chữ"
                 >
-                  <ZoomOut className="w-3 h-3" />
+                  <ZoomOut className="w-3.5 h-3.5" />
                 </button>
-                <span className="px-1 font-mono text-[10px] font-bold text-[#EDEFF2]">
+                <span className="max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden inline-block px-1 font-mono text-[10px] font-bold text-[#EDEFF2]">
                   {fontSize}px
                 </span>
                 <button
                   onClick={() => setFontSize((f) => Math.min(22, f + 1))}
-                  className="p-0.5 text-[#8B94A3] hover:text-[#EDEFF2] transition-colors cursor-pointer"
+                  className="p-1 text-[#8B94A3] hover:text-[#EDEFF2] transition-colors cursor-pointer"
                   title="Tăng cỡ chữ"
                 >
-                  <ZoomIn className="w-3 h-3" />
+                  <ZoomIn className="w-3.5 h-3.5" />
                 </button>
               </div>
 
               {/* Format Button */}
               <button
                 onClick={handleFormatCode}
-                className="h-7 whitespace-nowrap px-2 rounded bg-[#0B0D11] hover:bg-white/[0.04] text-[#C9962C] text-xs font-mono transition-colors border border-white/[0.06] flex items-center gap-1 flex-shrink-0 cursor-pointer"
-                title="Format code"
+                className="h-7 whitespace-nowrap px-2 rounded bg-[#0B0D11] hover:bg-white/[0.04] text-[#C9962C] text-xs font-mono transition-all border border-white/[0.06] flex items-center gap-1.5 flex-shrink-0 cursor-pointer group"
+                title="Format code (Tự động sắp xếp code đẹp chuẩn Prettier)"
               >
                 {isFormattedSuccess ? (
-                  <Check className="w-3 h-3 text-[#2FAE79]" />
+                  <Check className="w-3.5 h-3.5 text-[#2FAE79] flex-shrink-0" />
                 ) : (
-                  <Wand2 className="w-3 h-3 text-[#C9962C]" />
+                  <Wand2 className="w-3.5 h-3.5 text-[#C9962C] flex-shrink-0" />
                 )}
-                <span>{isFormattedSuccess ? "Đã Format" : "Format"}</span>
+                <span className="max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden inline-block font-sans text-[11px] font-bold">
+                  {isFormattedSuccess ? "Đã Format" : "Format"}
+                </span>
               </button>
 
               {/* Fullscreen Button */}
               <button
                 onClick={() => setIsFullscreen(!isFullscreen)}
-                className={`h-7 whitespace-nowrap px-2 rounded text-xs font-mono transition-colors border flex items-center gap-1 flex-shrink-0 cursor-pointer ${
+                className={`h-7 whitespace-nowrap px-2 rounded text-xs font-mono transition-all border flex items-center gap-1.5 flex-shrink-0 cursor-pointer group ${
                   isFullscreen
                     ? "bg-[#C1553B] text-[#EDEFF2] border-[#C1553B]"
                     : "bg-[#0B0D11] text-[#8B94A3] hover:text-[#EDEFF2] border-white/[0.06]"
                 }`}
+                title={isFullscreen ? "Thu nhỏ giao diện" : "Phóng to giao diện"}
               >
                 {isFullscreen ? (
-                  <Minimize2 className="w-3 h-3" />
+                  <Minimize2 className="w-3.5 h-3.5 flex-shrink-0" />
                 ) : (
-                  <Maximize2 className="w-3 h-3" />
+                  <Maximize2 className="w-3.5 h-3.5 flex-shrink-0" />
                 )}
-                <span>{isFullscreen ? "Thu Nhỏ" : "Phóng To"}</span>
+                <span className="max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden inline-block font-sans text-[11px] font-bold">
+                  {isFullscreen ? "Thu Nhỏ" : "Phóng To"}
+                </span>
               </button>
 
               {question.type === "CODING_PRACTICE" && (
@@ -1001,23 +1008,29 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                   <button
                     onClick={handleEvaluateWithAI}
                     disabled={isAiLoading}
-                    className="h-7 whitespace-nowrap px-2.5 rounded border border-[#5B54D9]/40 bg-[#5B54D9]/20 hover:bg-[#5B54D9]/30 text-[#EDEFF2] text-xs font-mono transition-colors flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:opacity-50"
+                    title="Chấm AI (Trợ lý AI đánh giá & giải thích chi tiết)"
+                    className="h-7 whitespace-nowrap px-2 rounded border border-[#5B54D9]/40 bg-[#5B54D9]/20 hover:bg-[#5B54D9]/30 text-[#EDEFF2] text-xs font-mono transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50 group"
                   >
-                    <Sparkles className="w-3 h-3 text-[#5B54D9]" />
-                    <span>Chấm AI</span>
+                    <Sparkles className="w-3.5 h-3.5 text-[#5B54D9] flex-shrink-0" />
+                    <span className="max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden inline-block font-sans text-[11px] font-bold">
+                      Chấm AI
+                    </span>
                   </button>
 
                   <button
                     onClick={handleRunTests}
                     disabled={isEvaluating}
-                    className="h-7 whitespace-nowrap px-3 rounded border border-[#2FAE79] bg-[#2FAE79]/20 hover:bg-[#2FAE79]/40 text-[#2FAE79] text-xs font-mono font-bold transition-colors flex items-center gap-1 flex-shrink-0 cursor-pointer disabled:opacity-50"
+                    title="Chạy Test Code (Kiểm tra lời giải với các TestCase)"
+                    className="h-7 whitespace-nowrap px-2 rounded border border-[#2FAE79] bg-[#2FAE79]/20 hover:bg-[#2FAE79]/40 text-[#2FAE79] text-xs font-mono font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50 group"
                   >
                     {isEvaluating ? (
-                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
                     ) : (
-                      <Play className="w-3 h-3 text-[#2FAE79] fill-current" />
+                      <Play className="w-3.5 h-3.5 text-[#2FAE79] fill-current flex-shrink-0" />
                     )}
-                    <span>Chạy Test Code</span>
+                    <span className="max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden inline-block font-sans text-[11px] font-bold">
+                      Chạy Test Code
+                    </span>
                   </button>
                 </>
               )}

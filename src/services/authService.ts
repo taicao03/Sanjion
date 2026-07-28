@@ -9,26 +9,47 @@ const resolveUserRole = (
   userId?: string,
   localRole?: string
 ): UserRole => {
-  if (dbRole && (dbRole === 'OWNER' || dbRole === 'ADMIN' || dbRole === 'USER')) {
+  // 1. If DB role is explicitly OWNER or ADMIN, grant immediately
+  if (dbRole === 'OWNER' || dbRole === 'ADMIN') {
     return dbRole as UserRole;
   }
+
+  // 2. Check adminUsers list from adminService
   const adminUsers = adminService.getUsers();
   const matched = adminUsers.find(
     (a) =>
       (userId && a.id === userId) ||
       (email && a.email && a.email.toLowerCase() === email.toLowerCase())
   );
-  if (matched?.role) {
+  if (matched?.role && (matched.role === 'OWNER' || matched.role === 'ADMIN')) {
     return matched.role;
   }
-  if (localRole && (localRole === 'OWNER' || localRole === 'ADMIN')) {
+
+  // 3. Check local storage profile role
+  if (localRole === 'OWNER' || localRole === 'ADMIN') {
     return localRole as UserRole;
   }
+
+  // 4. Check email patterns for automatic OWNER/ADMIN recognition
   if (email) {
     const lower = email.toLowerCase();
-    if (lower.includes('owner') || lower.includes('taicao03') || lower.includes('taicao')) return 'OWNER';
-    if (lower.includes('admin') || lower.includes('taichinchan')) return 'ADMIN';
+    if (
+      lower.includes('owner') ||
+      lower.includes('taicao') ||
+      lower.includes('taichinchan')
+    ) {
+      return 'OWNER';
+    }
+    if (lower.includes('admin')) {
+      return 'ADMIN';
+    }
   }
+
+  // 5. Fallback to dbRole if USER or default to USER
+  if (dbRole === 'USER') {
+    return 'USER';
+  }
+
   return 'USER';
 };
 
