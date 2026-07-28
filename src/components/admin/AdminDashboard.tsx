@@ -446,19 +446,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </p>
           </div>
 
-          {/* Quick Role Switcher using CustomRoleSelect */}
-          <div className="bg-[#0B0D11] border border-white/10 rounded-2xl p-4 w-full md:w-80 flex flex-col gap-2.5 text-white shadow-xl">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 uppercase font-bold">Vai Trò Của Bạn</span>
-              {getRoleBadge(currentUserRole)}
-            </div>
-            <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-              <label className="text-[11px] text-slate-400 font-bold">⚡ Đổi nhanh Role Test:</label>
-              <CustomRoleSelect
-                value={currentUserRole}
-                onChange={(newRole) => onProfileRoleChanged && onProfileRoleChanged(newRole)}
-              />
-            </div>
+          {/* Role Display */}
+          <div className="bg-[#0B0D11] border border-white/10 rounded-2xl p-4 flex items-center gap-3 text-white shadow-xl">
+            <span className="text-xs text-slate-400 uppercase font-bold">Vai Trò Của Bạn:</span>
+            {getRoleBadge(currentUserRole)}
           </div>
         </div>
       </div>

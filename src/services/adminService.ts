@@ -11,35 +11,19 @@ const LOCAL_STORAGE_USERS_KEY = 'sanjion_permanent_users_v2';
 
 export const INITIAL_USERS: AdminUserItem[] = [
   {
-    id: 'usr-owner-01',
-    username: 'taicao_owner',
-    fullName: 'Cao Tải (Supreme Owner)',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
-    streakCount: 42,
-    lastActiveDate: new Date().toISOString().split('T')[0],
-    targetLevel: 'Senior',
-    totalPoints: 1250,
-    role: 'OWNER',
-    email: 'owner@sanjion.dev',
-    joinedDate: '2026-01-01',
-    status: 'ACTIVE',
-    solvedQuestionsCount: 24,
-    provider: 'email',
-  },
-  {
     id: 'usr-admin-taichinchan',
     username: 'taichinchan',
     fullName: 'Cao Tải Admin (taichinchan)',
     avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=taichinchan',
-    streakCount: 99,
+    streakCount: 0,
     lastActiveDate: new Date().toISOString().split('T')[0],
     targetLevel: 'Senior',
-    totalPoints: 500,
-    role: 'ADMIN',
+    totalPoints: 0,
+    role: 'OWNER',
     email: 'taichinchan@sanjion.dev',
     joinedDate: '2026-01-15',
     status: 'ACTIVE',
-    solvedQuestionsCount: 18,
+    solvedQuestionsCount: 0,
     provider: 'email',
   },
 ];
@@ -161,7 +145,7 @@ export const adminService = {
       users[existingIndex] = {
         ...existing,
         ...accountItem,
-        role: existing.role !== 'USER' ? existing.role : accountItem.role,
+        role: accountItem.role || 'USER',
         provider: (accountItem.provider && accountItem.provider !== 'email') ? accountItem.provider : (existing.provider || accountItem.provider),
       };
     } else {

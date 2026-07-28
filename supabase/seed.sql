@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY,
     full_name VARCHAR(255),
     username VARCHAR(255),
-    email VARCHAR(255),
+    email VARCHAR(255) UNIQUE,
     avatar_url TEXT,
     role VARCHAR(50) DEFAULT 'USER',
     provider VARCHAR(50) DEFAULT 'email',

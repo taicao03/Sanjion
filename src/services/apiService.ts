@@ -29,9 +29,19 @@ const saveLocalAiQuestion = (question: Question) => {
   }
 };
 
+// In-Memory Caches to prevent duplicate network calls
+let cachedCategories: Category[] | null = null;
+let cachedQuestions: Question[] | null = null;
+
 export const apiService = {
   isBackendConnected(): boolean {
     return isSupabaseConfigured;
+  },
+
+  // Clear in-memory caches
+  clearCache() {
+    cachedCategories = null;
+    cachedQuestions = null;
   },
 
   // Fetch Real Database Users from Supabase
@@ -169,8 +179,13 @@ export const apiService = {
 
   // Fetch Categories from Supabase DB or Fallback to Roadmap.sh Categories
   async getCategories(): Promise<Category[]> {
+    if (cachedCategories && cachedCategories.length > 0) {
+      return cachedCategories;
+    }
+
     if (!isSupabaseConfigured || !supabase) {
       console.log('⚡ [API Mode]: Local Sandbox Mode (Chưa kết nối Supabase)');
+      cachedCategories = MOCK_CATEGORIES;
       return MOCK_CATEGORIES;
     }
 
@@ -182,6 +197,7 @@ export const apiService = {
         .order('order_index', { ascending: true });
 
       if (error || !data || data.length === 0) {
+        cachedCategories = MOCK_CATEGORIES;
         return MOCK_CATEGORIES;
       }
 
@@ -203,22 +219,31 @@ export const apiService = {
         }
       });
 
-      return Array.from(uniqueCats.values()).sort((a, b) => a.orderIndex - b.orderIndex);
+      const result = Array.from(uniqueCats.values()).sort((a, b) => a.orderIndex - b.orderIndex);
+      cachedCategories = result;
+      return result;
     } catch (err) {
       console.error('Failed to fetch categories from Supabase:', err);
+      cachedCategories = MOCK_CATEGORIES;
       return MOCK_CATEGORIES;
     }
   },
 
   // Fetch Questions from Supabase DB + AI Saved Questions + Roadmap.sh Question Bank
   async getQuestions(): Promise<Question[]> {
+    if (cachedQuestions && cachedQuestions.length > 0) {
+      return cachedQuestions;
+    }
+
     const localAiQs = getLocalAiQuestions();
 
     if (!isSupabaseConfigured || !supabase) {
       const combinedMock = [...localAiQs, ...MOCK_QUESTIONS];
       const uniqueMock = new Map<string, Question>();
       combinedMock.forEach(q => uniqueMock.set(q.slug || q.id, q));
-      return Array.from(uniqueMock.values());
+      const result = Array.from(uniqueMock.values());
+      cachedQuestions = result;
+      return result;
     }
 
     try {
@@ -275,13 +300,17 @@ export const apiService = {
         }
       });
 
-      return Array.from(uniqueMap.values());
+      const result = Array.from(uniqueMap.values());
+      cachedQuestions = result;
+      return result;
     } catch (err) {
       console.error('Failed to fetch questions from Supabase:', err);
       const combinedMock = [...localAiQs, ...MOCK_QUESTIONS];
       const uniqueMock = new Map<string, Question>();
       combinedMock.forEach(q => uniqueMock.set(q.slug || q.id, q));
-      return Array.from(uniqueMock.values());
+      const result = Array.from(uniqueMock.values());
+      cachedQuestions = result;
+      return result;
     }
   },
 
@@ -289,6 +318,7 @@ export const apiService = {
   async saveQuestion(question: Question): Promise<void> {
     // 1. ALWAYS PERSIST TO LOCAL STORAGE IMMEDIATELY
     saveLocalAiQuestion(question);
+    cachedQuestions = null; // Invalidate cache
     console.log('✅ Đã lưu câu hỏi AI vừa tạo vào Bộ Nhớ Ngân Hàng Sanjion!');
 
     // 2. PERSIST TO SUPABASE CLOUD DB IF CONNECTED
@@ -333,6 +363,7 @@ export const apiService = {
   // ✨ CLEAR ALL QUESTIONS FROM DB & LOCAL AI CACHE ✨
   async clearAllQuestions(): Promise<void> {
     localStorage.removeItem(AI_QUESTIONS_KEY);
+    cachedQuestions = null; // Invalidate cache
     if (isSupabaseConfigured && supabase) {
       try {
         await supabase.from('questions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -356,26 +387,27 @@ export const apiService = {
     const updatedProgress = storageService.saveProgress(questionId, status, scoreEarned, userAnswer, questionSlug, userId, aiResult);
     const updatedProfile = storageService.getProfile();
 
-    if (isSupabaseConfigured && supabase && userId) {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(userId);
+
+    if (isSupabaseConfigured && supabase && isUuid) {
       try {
         console.log('🟢 [API Mode]: Đang lưu tiến độ & điểm số mới lên Supabase Cloud -> user_progress');
         
-        try {
-          await supabase.from('user_progress').upsert({
-            user_id: userId,
-            question_id: questionId,
-            status,
-            score: updatedProgress.score,
-            user_answer: userAnswer,
-            solved_at: status === 'SOLVED' ? new Date().toISOString() : null,
-            last_attempt_at: new Date().toISOString(),
-          });
-        } catch (dbErr) {
-          console.warn('Upsert user_progress notice:', dbErr);
+        const { error: progErr } = await supabase.from('user_progress').upsert({
+          user_id: userId,
+          question_id: questionId,
+          status,
+          score: updatedProgress.score,
+          user_answer: userAnswer,
+          solved_at: status === 'SOLVED' ? new Date().toISOString() : null,
+          last_attempt_at: new Date().toISOString(),
+        });
+        if (progErr) {
+          console.warn('Upsert user_progress notice:', progErr.message);
         }
 
         // Update profile points, streak & metadata on Supabase DB
-        await supabase.from('user_profiles').upsert({
+        const { error: profErr } = await supabase.from('user_profiles').upsert({
           id: userId,
           full_name: updatedProfile.fullName,
           email: updatedProfile.email,
@@ -387,6 +419,9 @@ export const apiService = {
           role: updatedProfile.role || 'USER',
           provider: updatedProfile.provider || 'email',
         });
+        if (profErr) {
+          console.warn('Upsert user_profile notice:', profErr.message);
+        }
       } catch (err) {
         console.error('Failed to sync progress to Supabase:', err);
       }

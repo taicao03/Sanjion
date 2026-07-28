@@ -6,77 +6,82 @@ import { adminService } from './adminService';
 export const authService = {
   // Check if current session exists and extract full name from metadata & Supabase DB
   async getSessionUser(): Promise<{ user: any; profile: UserProfile | null }> {
-    if (!isSupabaseConfigured || !supabase) {
-      return { user: null, profile: null };
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session || !session.user) {
-        return { user: null, profile: null };
-      }
-
-      const user = session.user;
-      const meta = user.user_metadata || {};
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user) {
+          const user = session.user;
+          const meta = user.user_metadata || {};
 
       // Extract name from metadata
       const oauthName = meta.full_name || meta.name || meta.preferred_username || meta.user_name;
       const oauthUsername = meta.preferred_username || meta.user_name || user.email?.split('@')[0] || 'dev_pro';
       const oauthAvatar = meta.avatar_url || meta.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`;
       
-      // Fetch profile from Supabase profiles table
-      const { data: profileData } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(user.id);
+
+      // Fetch profile from Supabase profiles table if valid UUID
+      let profileData: any = null;
+      if (isUuid) {
+        const { data } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle();
+        profileData = data;
+      }
 
       const finalFullName = profileData?.full_name || oauthName || user.email?.split('@')[0] || 'Developer Sanjion';
       const finalUsername = profileData?.username || oauthUsername;
       const finalAvatarUrl = profileData?.avatar_url || oauthAvatar;
 
-      // Fetch THIS USER's progress from Supabase user_progress table
-      const { data: userProgressList } = await supabase
-        .from('user_progress')
-        .select('*')
-        .eq('user_id', user.id);
-
+      // Fetch THIS USER's progress from Supabase user_progress table if valid UUID
       const dbProgressMap: Record<string, UserProgress> = {};
-      
-      if (userProgressList && Array.isArray(userProgressList)) {
-        userProgressList.forEach((item: any) => {
-          dbProgressMap[item.question_id] = {
-            questionId: item.question_id,
-            status: item.status,
-            score: item.score || 0,
-            userAnswer: item.user_answer || '',
-            attemptsCount: 1,
-            solvedAt: item.solved_at,
-            lastAttemptAt: item.last_attempt_at,
-          };
-        });
+      if (isUuid) {
+        const { data: userProgressList } = await supabase
+          .from('user_progress')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (userProgressList && Array.isArray(userProgressList)) {
+          userProgressList.forEach((item: any) => {
+            dbProgressMap[item.question_id] = {
+              questionId: item.question_id,
+              status: item.status,
+              score: item.score || 0,
+              userAnswer: item.user_answer || '',
+              attemptsCount: 1,
+              solvedAt: item.solved_at,
+              lastAttemptAt: item.last_attempt_at,
+            };
+          });
+        }
       }
 
       const localUserProgress = storageService.getAllProgress(user.id);
       const mergedProgressMap = { ...localUserProgress, ...dbProgressMap };
       storageService.setAllProgress(mergedProgressMap, user.id);
 
-      // Sync merged progress back to Supabase user_progress table
-      if (user.id && isSupabaseConfigured && supabase) {
+      // Batch Sync merged progress back to Supabase user_progress table (1 single network request)
+      if (isUuid && isSupabaseConfigured && supabase) {
         const progressEntries = Object.values(mergedProgressMap);
-        for (const item of progressEntries) {
-          try {
-            await supabase.from('user_progress').upsert({
-              user_id: user.id,
-              question_id: item.questionId,
-              status: item.status,
-              score: item.score || 0,
-              user_answer: item.userAnswer || '',
-              solved_at: item.solvedAt || new Date().toISOString(),
-              last_attempt_at: item.lastAttemptAt || new Date().toISOString(),
-            });
-          } catch (syncErr) {
-            console.warn('Sync progress item error:', syncErr);
+        if (progressEntries.length > 0) {
+          const batchPayload = progressEntries.map((item) => ({
+            user_id: user.id,
+            question_id: item.questionId,
+            status: item.status,
+            score: item.score || 0,
+            user_answer: item.userAnswer || '',
+            solved_at: item.solvedAt || new Date().toISOString(),
+            last_attempt_at: item.lastAttemptAt || new Date().toISOString(),
+          }));
+
+          const { error: batchErr } = await supabase
+            .from('user_progress')
+            .upsert(batchPayload, { onConflict: 'user_id,question_id' });
+          
+          if (batchErr) {
+            console.warn('Batch progress sync notice:', batchErr.message);
           }
         }
       }
@@ -91,33 +96,22 @@ export const authService = {
       const localProf = storageService.getProfile();
       const detectedProvider = user.app_metadata?.provider || user.identities?.[0]?.provider || meta.provider || (user.email?.includes('gmail') ? 'google' : user.email?.includes('github') ? 'github' : 'email');
 
-      if (user.id) {
-        try {
-          await supabase.from('user_profiles').upsert({
-            id: user.id,
-            full_name: finalFullName,
-            username: finalUsername,
-            email: user.email,
-            avatar_url: finalAvatarUrl,
-            streak_count: totalSolvedPoints > 0 ? 1 : 0,
-            total_points: totalSolvedPoints,
-            last_active_date: new Date().toISOString().split('T')[0],
-            role: profileData?.role || localProf.role || 'USER',
-            provider: detectedProvider,
-          });
-        } catch (err) {
-          try {
-            await supabase.from('user_profiles').upsert({
-              id: user.id,
-              full_name: finalFullName,
-              avatar_url: finalAvatarUrl,
-              streak_count: totalSolvedPoints > 0 ? 1 : 0,
-              total_points: totalSolvedPoints,
-              last_active_date: new Date().toISOString().split('T')[0],
-            });
-          } catch (e2) {
-            console.warn('Upsert profile error:', e2);
-          }
+      if (isUuid) {
+        const { error: profUpsertErr } = await supabase.from('user_profiles').upsert({
+          id: user.id,
+          full_name: finalFullName,
+          username: finalUsername,
+          email: user.email,
+          avatar_url: finalAvatarUrl,
+          streak_count: totalSolvedPoints > 0 ? 1 : 0,
+          total_points: totalSolvedPoints,
+          last_active_date: new Date().toISOString().split('T')[0],
+          role: profileData?.role || localProf.role || 'USER',
+          provider: detectedProvider,
+        });
+
+        if (profUpsertErr) {
+          console.warn('Profile upsert notice:', profUpsertErr.message);
         }
       }
 
@@ -148,7 +142,7 @@ export const authService = {
         lastActiveDate: profileData?.last_active_date || new Date().toISOString().split('T')[0],
         targetLevel: isDeletedAccount ? 'Junior' : (profileData?.target_level || 'Junior'),
         totalPoints: highestPoints,
-        role: isDeletedAccount ? 'USER' : (profileData?.role || 'USER'),
+        role: isDeletedAccount ? 'USER' : (profileData?.role || localProf.role || 'USER'),
         email: user.email,
         provider: detectedProvider,
       };
@@ -158,10 +152,21 @@ export const authService = {
       adminService.saveOAuthAccount(profile);
 
       return { user, profile };
-    } catch (err) {
-      console.error('Error fetching auth session:', err);
-      return { user: null, profile: null };
+        }
+      } catch (err) {
+        console.error('Error fetching auth session:', err);
+      }
     }
+
+    // Fallback: If no active Supabase session (or offline/mock mode), check local storage profile
+    const localProf = storageService.getProfile();
+    const isGuest = !localProf || !localProf.id || localProf.fullName === 'Chưa Đăng Nhập' || localProf.fullName === 'Khách (Chưa đăng nhập)';
+
+    if (!isGuest) {
+      return { user: { id: localProf.id, email: localProf.email }, profile: localProf };
+    }
+
+    return { user: null, profile: null };
   },
 
   // Register with Email & Password
@@ -285,10 +290,56 @@ export const authService = {
             throw signUpRes.error || error;
           }
 
+          if (signUpRes.data?.user) {
+            const u = signUpRes.data.user;
+            // Query Supabase for existing role if any
+            let userRole: any = 'USER';
+            const { data: pData } = await supabase.from('user_profiles').select('role').eq('id', u.id).maybeSingle();
+            if (pData?.role) userRole = pData.role;
+
+            const profile: UserProfile = {
+              id: u.id,
+              username: email.split('@')[0],
+              fullName: u.user_metadata?.full_name || email.split('@')[0],
+              avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
+              streakCount: 1,
+              lastActiveDate: new Date().toISOString().split('T')[0],
+              targetLevel: 'Senior',
+              totalPoints: 100,
+              role: userRole,
+              email: email,
+            };
+            storageService.updateProfile(profile);
+            adminService.saveOAuthAccount(profile);
+          }
+
           return signUpRes.data;
         }
         throw error;
       }
+
+      if (data && data.user) {
+        const u = data.user;
+        let userRole: any = 'USER';
+        const { data: pData } = await supabase.from('user_profiles').select('role').eq('id', u.id).maybeSingle();
+        if (pData?.role) userRole = pData.role;
+
+        const profile: UserProfile = {
+          id: u.id,
+          username: u.email?.split('@')[0] || 'dev_user',
+          fullName: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Học Viên Sanjion',
+          avatarUrl: u.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`,
+          streakCount: 1,
+          lastActiveDate: new Date().toISOString().split('T')[0],
+          targetLevel: 'Senior',
+          totalPoints: 100,
+          role: userRole,
+          email: email,
+        };
+        storageService.updateProfile(profile);
+        adminService.saveOAuthAccount(profile);
+      }
+
       return data;
     } catch (err: any) {
       if (email === 'owner@sanjion.dev' || email.includes('owner')) {

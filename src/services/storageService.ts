@@ -53,7 +53,7 @@ export const storageService = {
     const targetId = userId || prof.id;
     
     let data = null;
-    if (targetId) {
+    if (targetId && targetId !== 'guest' && targetId !== '') {
       data = localStorage.getItem(`fe_sanjion_v2_progress_${targetId}`);
     }
     if (!data) {
@@ -66,9 +66,10 @@ export const storageService = {
     const prof = this.getProfile();
     const targetId = userId || prof.id;
     
-    localStorage.setItem(STORAGE_KEYS.USER_PROGRESS, JSON.stringify(progressMap));
-    if (targetId) {
+    if (targetId && targetId !== 'guest' && targetId !== '') {
       localStorage.setItem(`fe_sanjion_v2_progress_${targetId}`, JSON.stringify(progressMap));
+    } else {
+      localStorage.setItem(STORAGE_KEYS.USER_PROGRESS, JSON.stringify(progressMap));
     }
   },
 
@@ -169,6 +170,9 @@ export const storageService = {
 
   clearAllData() {
     localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
+    localStorage.removeItem(STORAGE_KEYS.USER_PROGRESS);
+    localStorage.removeItem(STORAGE_KEYS.BOOKMARKS);
+    localStorage.removeItem(STORAGE_KEYS.DAILY_ACTIVITY);
   },
 
   // --- Complete User Purge (Wipes out all progress, points, streak, and history) ---

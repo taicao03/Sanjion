@@ -111,6 +111,8 @@ export function App() {
     useState<boolean>(false);
   const [directAiMessage, setDirectAiMessage] = useState<string>("");
 
+  const isLoadingUserDataRef = React.useRef(false);
+
   useEffect(() => {
     loadInitialData();
 
@@ -155,20 +157,31 @@ export function App() {
   };
 
   const loadUserData = async () => {
-    const { user, profile: fetchedProfile } =
-      await authService.getSessionUser();
-    if (user && fetchedProfile) {
-      setIsLoggedIn(true);
-      setProfile(fetchedProfile);
-      setProgressMap(storageService.getAllProgress(fetchedProfile.id));
-    } else {
-      setIsLoggedIn(false);
-      const prof = storageService.getProfile();
-      setProfile(prof);
-      setProgressMap(storageService.getAllProgress(prof.id));
+    if (isLoadingUserDataRef.current) return;
+    isLoadingUserDataRef.current = true;
+    try {
+      const { user, profile: fetchedProfile } =
+        await authService.getSessionUser();
+      const localProf = storageService.getProfile();
+      
+      const activeProf = (user && fetchedProfile) ? fetchedProfile : localProf;
+      const isValidUser = Boolean(
+        activeProf && 
+        activeProf.id && 
+        activeProf.id !== "" && 
+        activeProf.id !== "guest" && 
+        activeProf.fullName !== "Chưa Đăng Nhập" && 
+        activeProf.fullName !== "Khách (Chưa đăng nhập)"
+      );
+
+      setIsLoggedIn(isValidUser);
+      setProfile(activeProf);
+      setProgressMap(storageService.getAllProgress(activeProf.id));
+      setActivityHistory(storageService.getActivityHistory());
+      setBookmarks(storageService.getBookmarks());
+    } finally {
+      isLoadingUserDataRef.current = false;
     }
-    setActivityHistory(storageService.getActivityHistory());
-    setBookmarks(storageService.getBookmarks());
   };
 
   const handleToggleBookmark = (e: React.MouseEvent, questionId: string) => {
@@ -287,6 +300,9 @@ export function App() {
     setIsLoggedIn(false);
     const defaultProfile = storageService.resetProfile();
     setProfile(defaultProfile);
+    setProgressMap({});
+    setBookmarks([]);
+    setActivityHistory({});
     if (currentView === "admin") {
       setCurrentView("roadmap");
     }
