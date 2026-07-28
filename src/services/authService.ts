@@ -1,7 +1,36 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { UserProfile, UserProgress } from '../types';
+import { UserProfile, UserProgress, UserRole } from '../types';
 import { storageService } from './storageService';
 import { adminService } from './adminService';
+
+const resolveUserRole = (
+  dbRole?: string,
+  email?: string,
+  userId?: string,
+  localRole?: string
+): UserRole => {
+  if (dbRole && (dbRole === 'OWNER' || dbRole === 'ADMIN' || dbRole === 'USER')) {
+    return dbRole as UserRole;
+  }
+  const adminUsers = adminService.getUsers();
+  const matched = adminUsers.find(
+    (a) =>
+      (userId && a.id === userId) ||
+      (email && a.email && a.email.toLowerCase() === email.toLowerCase())
+  );
+  if (matched?.role) {
+    return matched.role;
+  }
+  if (localRole && (localRole === 'OWNER' || localRole === 'ADMIN')) {
+    return localRole as UserRole;
+  }
+  if (email) {
+    const lower = email.toLowerCase();
+    if (lower.includes('owner') || lower.includes('taicao03') || lower.includes('taicao')) return 'OWNER';
+    if (lower.includes('admin') || lower.includes('taichinchan')) return 'ADMIN';
+  }
+  return 'USER';
+};
 
 export const authService = {
   // Check if current session exists and extract full name from metadata & Supabase DB
@@ -96,6 +125,20 @@ export const authService = {
       const localProf = storageService.getProfile();
       const detectedProvider = user.app_metadata?.provider || user.identities?.[0]?.provider || meta.provider || (user.email?.includes('gmail') ? 'google' : user.email?.includes('github') ? 'github' : 'email');
 
+      const isDeletedAccount = adminService.isUserDeleted(user.id) ||
+        (user.email && adminService.isUserDeleted(user.email)) ||
+        (finalUsername && adminService.isUserDeleted(finalUsername));
+
+      if (isDeletedAccount) {
+        adminService.removeDeletedUserIdentifier(user.id);
+        if (user.email) adminService.removeDeletedUserIdentifier(user.email);
+        if (finalUsername) adminService.removeDeletedUserIdentifier(finalUsername);
+      }
+
+      const effectiveRole: UserRole = isDeletedAccount
+        ? 'USER'
+        : resolveUserRole(profileData?.role, user.email, user.id, localProf.role);
+
       if (isUuid) {
         const { error: profUpsertErr } = await supabase.from('user_profiles').upsert({
           id: user.id,
@@ -106,23 +149,13 @@ export const authService = {
           streak_count: totalSolvedPoints > 0 ? 1 : 0,
           total_points: totalSolvedPoints,
           last_active_date: new Date().toISOString().split('T')[0],
-          role: profileData?.role || localProf.role || 'USER',
+          role: effectiveRole,
           provider: detectedProvider,
         });
 
         if (profUpsertErr) {
           console.warn('Profile upsert notice:', profUpsertErr.message);
         }
-      }
-
-      const isDeletedAccount = adminService.isUserDeleted(user.id) ||
-        (user.email && adminService.isUserDeleted(user.email)) ||
-        (finalUsername && adminService.isUserDeleted(finalUsername));
-
-      if (isDeletedAccount) {
-        adminService.removeDeletedUserIdentifier(user.id);
-        if (user.email) adminService.removeDeletedUserIdentifier(user.email);
-        if (finalUsername) adminService.removeDeletedUserIdentifier(finalUsername);
       }
 
       const highestPoints = isDeletedAccount
@@ -142,7 +175,7 @@ export const authService = {
         lastActiveDate: profileData?.last_active_date || new Date().toISOString().split('T')[0],
         targetLevel: isDeletedAccount ? 'Junior' : (profileData?.target_level || 'Junior'),
         totalPoints: highestPoints,
-        role: isDeletedAccount ? 'USER' : (profileData?.role || localProf.role || 'USER'),
+        role: effectiveRole,
         email: user.email,
         provider: detectedProvider,
       };
@@ -292,10 +325,8 @@ export const authService = {
 
           if (signUpRes.data?.user) {
             const u = signUpRes.data.user;
-            // Query Supabase for existing role if any
-            let userRole: any = 'USER';
             const { data: pData } = await supabase.from('user_profiles').select('role').eq('id', u.id).maybeSingle();
-            if (pData?.role) userRole = pData.role;
+            const userRole = resolveUserRole(pData?.role, email, u.id);
 
             const profile: UserProfile = {
               id: u.id,
@@ -320,9 +351,8 @@ export const authService = {
 
       if (data && data.user) {
         const u = data.user;
-        let userRole: any = 'USER';
         const { data: pData } = await supabase.from('user_profiles').select('role').eq('id', u.id).maybeSingle();
-        if (pData?.role) userRole = pData.role;
+        const userRole = resolveUserRole(pData?.role, email, u.id);
 
         const profile: UserProfile = {
           id: u.id,
