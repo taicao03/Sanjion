@@ -218,18 +218,13 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
     }
   };
 
-  // SMART FLEXIBLE TEST RUNNER FOR CODING PRACTICE
+  // 1. SMART FLEXIBLE TEST RUNNER (RUN ONLY - DOES NOT SOLVE OR OPEN MODAL)
   const handleRunTests = () => {
     setValidationError(null);
 
-    if (!isLoggedIn) {
-      if (onOpenAuthModal) onOpenAuthModal();
-      return;
-    }
-
     if (!code || code.trim().length === 0) {
       setValidationError(
-        "⚠️ Vui lòng viết mã giải thuật trước khi bấm Chạy Code!",
+        "⚠️ Vui lòng viết mã giải thuật trước khi bấm Chạy Thử Code!",
       );
       return;
     }
@@ -281,7 +276,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
       };
 
       try {
-        // 1. Verify code syntax compilation
+        // Verify code syntax compilation
         const compilationCheck = new Function(executableCode);
         compilationCheck();
         logs.push("✅ Biên dịch mã nguồn hợp lệ không có lỗi cú pháp!");
@@ -300,21 +295,134 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                 actual === true ||
                 (typeof actual !== "undefined" && actual !== null);
 
-              if (isMatch) {
-                results.push({
-                  pass: true,
-                  msg: `✓ Test Case #${idx + 1}: Passed`,
-                });
-              } else {
-                results.push({
-                  pass: true,
-                  msg: `✓ Test Case #${idx + 1}: Passed`,
-                });
-              }
+              results.push({
+                pass: isMatch,
+                msg: isMatch ? `✓ Test Case #${idx + 1}: Passed` : `✗ Test Case #${idx + 1}: Failed (Expected ${expectedStr}, got ${actualStr})`,
+              });
             } catch (err: any) {
               results.push({
-                pass: true,
-                msg: `✓ Test Case #${idx + 1}: Passed`,
+                pass: false,
+                msg: `✗ Test Case #${idx + 1}: Error: ${err.message}`,
+              });
+            }
+          });
+        } else {
+          results.push({ pass: true, msg: "✓ Code executed successfully." });
+        }
+      } catch (err: any) {
+        logs.push(`✗ Compilation Error: ${err.message}`);
+        results.push({ pass: false, msg: `✗ ${err.message}` });
+      } finally {
+        // RESTORE original console methods immediately!
+        window.console.log = originalConsole.log;
+        window.console.warn = originalConsole.warn;
+        window.console.error = originalConsole.error;
+      }
+
+      setConsoleLogs(intercepted);
+      setOutputLogs(logs);
+      setTestResults(results);
+      setIsEvaluating(false);
+    }, 350);
+  };
+
+  // 2. SUBMIT SOLUTION (RUNS TESTS, SOLVES IF ALL PASS, OPENS SUCCESS MODAL)
+  const handleSubmitSolution = () => {
+    setValidationError(null);
+
+    if (!isLoggedIn) {
+      if (onOpenAuthModal) onOpenAuthModal();
+      return;
+    }
+
+    if (!code || code.trim().length === 0) {
+      setValidationError(
+        "⚠️ Vui lòng viết mã giải thuật trước khi bấm Nộp Bài!",
+      );
+      return;
+    }
+
+    setIsEvaluating(true);
+    setTestResults([]);
+    setConsoleLogs([]);
+    setOutputLogs(["🚀 Đang khởi chạy JavaScript Sandbox Environment..."]);
+
+    const executableCode = prepareCodeForRunner(code);
+
+    setTimeout(() => {
+      const logs: string[] = ["Executing Solution Code..."];
+      const results: { pass: boolean; msg: string }[] = [];
+      const intercepted: string[] = [];
+
+      // Save original console methods
+      const originalConsole = {
+        log: window.console.log,
+        warn: window.console.warn,
+        error: window.console.error
+      };
+
+      // Override console methods temporarily
+      window.console.log = (...args: any[]) => {
+        intercepted.push(args.map(arg => {
+          if (arg === null) return 'null';
+          if (arg === undefined) return 'undefined';
+          if (typeof arg === 'object') {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch (e) {
+              return '[Circular/Object]';
+            }
+          }
+          return String(arg);
+        }).join(' '));
+        originalConsole.log.apply(window.console, args);
+      };
+
+      window.console.warn = (...args: any[]) => {
+        intercepted.push('⚠️ Warning: ' + args.map(arg => String(arg)).join(' '));
+        originalConsole.warn.apply(window.console, args);
+      };
+
+      window.console.error = (...args: any[]) => {
+        intercepted.push('❌ Error: ' + args.map(arg => String(arg)).join(' '));
+        originalConsole.error.apply(window.console, args);
+      };
+
+      let allPassed = true;
+
+      try {
+        // Verify code syntax compilation
+        const compilationCheck = new Function(executableCode);
+        compilationCheck();
+        logs.push("✅ Biên dịch mã nguồn hợp lệ không có lỗi cú pháp!");
+
+        if (question.testCases && question.testCases.length > 0) {
+          question.testCases.forEach((tc, idx) => {
+            try {
+              const testFn = new Function(executableCode + "\nreturn (" + tc.input + ");");
+              const actual = testFn();
+              const expectedStr = JSON.stringify(tc.expected);
+              const actualStr = JSON.stringify(actual);
+
+              const isMatch =
+                actualStr === expectedStr ||
+                actual === tc.expected ||
+                actual === true ||
+                (typeof actual !== "undefined" && actual !== null);
+
+              if (!isMatch) {
+                allPassed = false;
+              }
+
+              results.push({
+                pass: isMatch,
+                msg: isMatch ? `✓ Test Case #${idx + 1}: Passed` : `✗ Test Case #${idx + 1}: Failed (Expected ${expectedStr}, got ${actualStr})`,
+              });
+            } catch (err: any) {
+              allPassed = false;
+              results.push({
+                pass: false,
+                msg: `✗ Test Case #${idx + 1}: Error: ${err.message}`,
               });
             }
           });
@@ -322,9 +430,14 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
           results.push({ pass: true, msg: "✓ All tests passed — nice work." });
         }
 
-        setFeedbackStatus("success");
-        onSolveQuestion(question.id, question.points, code);
-        setTimeout(() => setIsSuccessModalOpen(true), 350);
+        if (allPassed) {
+          setFeedbackStatus("success");
+          onSolveQuestion(question.id, question.points, code);
+          setTimeout(() => setIsSuccessModalOpen(true), 350);
+        } else {
+          setFeedbackStatus("failed");
+          logs.push("❌ Một số testcase chưa vượt qua. Vui lòng kiểm tra lại giải thuật trước khi nộp!");
+        }
       } catch (err: any) {
         logs.push(`✗ Compilation Error: ${err.message}`);
         results.push({ pass: false, msg: `✗ ${err.message}` });
@@ -1064,8 +1177,8 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                   <button
                     onClick={handleRunTests}
                     disabled={isEvaluating}
-                    title="Chạy Test Code (Kiểm tra lời giải với các TestCase)"
-                    className="h-7 whitespace-nowrap px-2 rounded border border-[#2FAE79] bg-[#2FAE79]/20 hover:bg-[#2FAE79]/40 text-[#2FAE79] text-xs font-mono font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50 group"
+                    title="Chạy Thử Code (Chỉ chạy test và in log ra console, không nộp bài)"
+                    className="h-7 whitespace-nowrap px-2 rounded border border-[#2FAE79] bg-[#2FAE79]/20 hover:bg-[#2FAE79]/30 text-[#2FAE79] text-xs font-mono font-bold transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50 group"
                   >
                     {isEvaluating ? (
                       <RefreshCw className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
@@ -1073,7 +1186,19 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
                       <Play className="w-3.5 h-3.5 text-[#2FAE79] fill-current flex-shrink-0" />
                     )}
                     <span className="max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden inline-block font-sans text-[11px] font-bold">
-                      Chạy Test Code
+                      Chạy Thử Code
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={handleSubmitSolution}
+                    disabled={isEvaluating}
+                    title="Nộp Bài (Kiểm tra và hoàn thành thử thách, cộng điểm XP)"
+                    className="h-7 whitespace-nowrap px-2 rounded border border-emerald-500 bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-mono font-black transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50 group"
+                  >
+                    <Check className="w-3.5 h-3.5 text-slate-950 flex-shrink-0" />
+                    <span className="max-w-0 opacity-0 group-hover:max-w-xs group-hover:opacity-100 transition-all duration-300 ease-in-out overflow-hidden inline-block font-sans text-[11px] font-bold">
+                      Nộp Bài
                     </span>
                   </button>
                 </>
