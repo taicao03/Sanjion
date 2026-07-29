@@ -21,8 +21,10 @@ import {
   ShieldCheck,
   Zap,
   TrendingUp,
-  RefreshCw
+  RefreshCw,
+  Key
 } from 'lucide-react';
+import { ApiKeyModal } from '../shared/ApiKeyModal';
 import { FE_2026_QUESTION_BANK, FE2026Question } from '../../services/fe2026QuestionsData';
 import { speechService } from '../../services/speechService';
 import { aiService } from '../../services/aiService';
@@ -63,6 +65,7 @@ export const FEVoiceInterviewPage: React.FC = () => {
 
   // AI Generating Custom Question
   const [isGeneratingQuestion, setIsGeneratingQuestion] = useState<boolean>(false);
+  const [isKeyModalOpen, setIsKeyModalOpen] = useState<boolean>(false);
 
   // Console execution state
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
@@ -189,27 +192,39 @@ export const FEVoiceInterviewPage: React.FC = () => {
     }
 
     const logs: string[] = [];
-    const sandboxConsole = {
-      log: (...args: any[]) => {
-        logs.push(args.map(arg => {
-          if (arg === null) return 'null';
-          if (arg === undefined) return 'undefined';
-          if (typeof arg === 'object') {
-            try {
-              return JSON.stringify(arg, null, 2);
-            } catch (e) {
-              return '[Circular/Object]';
-            }
+
+    // Save original console methods
+    const originalConsole = {
+      log: window.console.log,
+      warn: window.console.warn,
+      error: window.console.error
+    };
+
+    // Override console methods temporarily
+    window.console.log = (...args: any[]) => {
+      logs.push(args.map(arg => {
+        if (arg === null) return 'null';
+        if (arg === undefined) return 'undefined';
+        if (typeof arg === 'object') {
+          try {
+            return JSON.stringify(arg, null, 2);
+          } catch (e) {
+            return '[Circular/Object]';
           }
-          return String(arg);
-        }).join(' '));
-      },
-      error: (...args: any[]) => {
-        logs.push('❌ Error: ' + args.map(arg => String(arg)).join(' '));
-      },
-      warn: (...args: any[]) => {
-        logs.push('⚠️ Warning: ' + args.map(arg => String(arg)).join(' '));
-      }
+        }
+        return String(arg);
+      }).join(' '));
+      originalConsole.log.apply(window.console, args);
+    };
+
+    window.console.warn = (...args: any[]) => {
+      logs.push('⚠️ Warning: ' + args.map(arg => String(arg)).join(' '));
+      originalConsole.warn.apply(window.console, args);
+    };
+
+    window.console.error = (...args: any[]) => {
+      logs.push('❌ Error: ' + args.map(arg => String(arg)).join(' '));
+      originalConsole.error.apply(window.console, args);
     };
 
     try {
@@ -219,22 +234,21 @@ export const FEVoiceInterviewPage: React.FC = () => {
         .replace(/^export\s+default\s+.*?;?/gm, "")
         .replace(/^export\s+(const|let|var|function|class)/gm, "$1");
 
-      const runner = new Function('console', `
-        try {
-          ${runnableCode}
-        } catch (err) {
-          console.error(err.message || err);
-        }
-      `);
-
-      runner(sandboxConsole);
+      const runner = new Function(runnableCode);
+      runner();
 
       if (logs.length === 0) {
         logs.push('✓ Mã nguồn đã chạy thành công (Không có lệnh log kết quả nào).');
       }
       setConsoleLogs(logs);
     } catch (err: any) {
-      setConsoleLogs([`❌ Lỗi biên dịch: ${err.message || err}`]);
+      logs.push(`❌ Lỗi thực thi: ${err.message || err}`);
+      setConsoleLogs([...logs]);
+    } finally {
+      // RESTORE original console methods immediately!
+      window.console.log = originalConsole.log;
+      window.console.warn = originalConsole.warn;
+      window.console.error = originalConsole.error;
     }
   };
 
@@ -299,9 +313,95 @@ export const FEVoiceInterviewPage: React.FC = () => {
     }
   };
 
+  const LOCAL_FALLBACK_INTERVIEW_QUESTIONS: FE2026Question[] = [
+    {
+      id: "fe2026-fallback-1",
+      title: "Tối ưu hóa INP với scheduler.yield() & React 19 Transition",
+      topic: "Performance & INP",
+      difficulty: "Tech Lead",
+      questionText: "Khi tối ưu hóa chỉ số INP (Interaction to Next Paint) cho một ứng dụng React 19 xử lý dữ liệu lớn (ví dụ: bộ lọc danh sách hàng trăm ngàn sản phẩm), sự khác biệt cốt lõi giữa việc sử dụng API trình duyệt mới `scheduler.yield()` so với việc bọc các thay đổi state trong `startTransition` là gì? Hãy trình bày bản chất cơ chế hoạt động và viết code minh họa.",
+      speechText: "Chào bạn. Với tư cách là Tech Lead, mình muốn bạn làm rõ sự khác biệt bản chất giữa scheduler dot yield của trình duyệt mới và startTransition của React 19 khi tối ưu chỉ số INP cho tác vụ lọc mảng lớn. Hãy phân tích cơ chế và cho ví dụ nhé.",
+      codeTemplate: `// Hãy tối ưu hàm xử lý lọc danh sách lớn dưới đây để tránh block Main Thread\nfunction handleFilterLargeList(query) {\n  // Viết giải pháp của bạn ở đây\n}`,
+      keyPointsToCover: [
+        "startTransition giảm độ ưu tiên của việc render React nhưng vẫn chạy đồng bộ trong một Task dài (có thể block main thread)",
+        "scheduler.yield() chủ động nhường luồng (yielding) về Event Loop sau mỗi cụm xử lý nhỏ, giúp trình duyệt xen kẽ các event tương tác của người dùng",
+        "Sự kết hợp giữa React 19 transition và scheduler.yield() mang lại trải nghiệm INP tối ưu nhất"
+      ],
+      expectedKeywords: ["scheduler.yield", "startTransition", "INP", "main thread", "event loop", "blocking"],
+      techLeadModelAnswer: `Bản chất sự khác biệt:
+1. \`startTransition\`: React 19 đánh dấu các cập nhật UI này là non-blocking. Tuy nhiên, bản thân quá trình tính toán JavaScript (CPU-bound) trong React vẫn có thể chạy liên tục trong 1 task dài.
+2. \`scheduler.yield()\`: Đây là native Web API cho phép chủ động bẻ gãy 1 Task lớn thành các Task nhỏ bằng cách trả quyền kiểm soát lại cho Event Loop sau mỗi cụm phần tử nhỏ.
+
+Giải pháp code tối ưu kết hợp cả hai:
+\`\`\`ts
+import { startTransition } from 'react';
+
+function handleFilter(query) {
+  startTransition(async () => {
+    const batchSize = 100;
+    for (let i = 0; i < items.length; i += batchSize) {
+      // Xử lý lọc từng lô dữ liệu nhỏ
+      processBatch(items.slice(i, i + batchSize), query);
+      
+      // Nhường luồng cho trình duyệt vẽ frame hoặc nhận tương tác mới
+      if (globalThis.scheduler?.yield) {
+        await globalThis.scheduler.yield();
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+  });
+}
+\`\`\``
+    },
+    {
+      id: "fe2026-fallback-2",
+      title: "React 19 Compiler (React Forget) & Cơ chế Auto-Memoization",
+      topic: "React 19",
+      difficulty: "Senior",
+      questionText: "React 19 Compiler (hay còn gọi là React Forget) tự động tối ưu hóa hiệu năng memoization mà không cần các hook thủ công như `useMemo` và `useCallback`. Hãy trình bày nguyên lý phân tích Static Analysis của Compiler để xác định khi nào một dependency thay đổi và trường hợp nào Compiler vẫn không thể tối ưu hóa được (khiến Component bị re-render thừa).",
+      speechText: "React 19 Compiler giúp lập trình viên không phải viết useMemo hay useCallback thủ công nữa. Bạn hãy phân tích cơ chế phân tích tĩnh của compiler và nêu trường hợp compiler vẫn đầu hàng không thể tối ưu được nhé.",
+      codeTemplate: `// Viết một Component ví dụ minh họa trường hợp React Compiler không thể tự động memoize\nexport function MyComponent({ data }) {\n  // Triển khai ở đây\n}`,
+      keyPointsToCover: [
+        "Compiler sử dụng phân tích luồng dữ liệu (Data Flow Analysis) và biểu đồ phụ thuộc để xác định tính bất biến",
+        "Trường hợp đột biến trực tiếp (Direct Mutation) sau khi truyền prop làm hỏng giả định của Compiler",
+        "Các hàm phụ thuộc vào biến toàn cục thay đổi liên tục nằm ngoài phạm vi phân tích tĩnh của Compiler"
+      ],
+      expectedKeywords: ["Compiler", "memoization", "Static Analysis", "mutation", "re-render", "Forget"],
+      techLeadModelAnswer: `Nguyên lý hoạt động của React Compiler:
+- Compiler phân tích AST (Abstract Syntax Tree) của component để sinh mã nguồn trung gian tự động kiểm tra xem các giá trị đầu vào (props, state) của một khối JSX có thay đổi hay không (như thể được bọc trong useMemo).
+- Nếu các đối tượng không bị biến đổi (immutability), Compiler sẽ cache lại kết quả render.
+
+Trường hợp Compiler không tối ưu được:
+1. **Direct Mutation**: Thay đổi trực tiếp thuộc tính của prop nhận được (ví dụ: \`data.value = 123\`). Compiler sẽ tắt memoization cho đối tượng đó để tránh lỗi hiển thị.
+2. **Global Side-effects**: Sử dụng các biến toàn cục bên ngoài React lifecycle hoặc API ngẫu nhiên không thể theo dõi qua static analysis.`
+    },
+    {
+      id: "fe2026-fallback-3",
+      title: "Next.js 15 Partial Prerendering (PPR) & Hybrid Rendering Mechanics",
+      topic: "Next.js 15+",
+      difficulty: "Tech Lead",
+      questionText: "Next.js 15 giới thiệu tính năng PPR (Partial Prerendering) giúp kết hợp các phần tĩnh (Static) và động (Dynamic) trong cùng một route bằng cách sử dụng React Suspense. Hãy phân tích cơ chế biên dịch tĩnh của Next.js Compiler khi sinh HTML tĩnh đại diện và cách nó stream các chunk động xuống sau khi user request.",
+      speechText: "Next.js 15 PPR giúp tải trang cực nhanh bằng cách nhúng trực tiếp dữ liệu động vào luồng tĩnh thông qua Suspense. Hãy phân tích cơ chế compile của Next.js PPR và quá trình stream dữ liệu động nhé.",
+      codeTemplate: `// Viết cấu trúc Route sử dụng React Suspense thích hợp cho PPR trong Next.js 15\nimport { Suspense } from 'react';\n// Triển khai ở đây`,
+      keyPointsToCover: [
+        "PPR tạo ra một HTML shell tĩnh trong quá trình Build time đại diện cho các Suspense fallback",
+        "Khi có request, Next.js gửi ngay HTML shell tĩnh này và giữ kết nối mở để stream các dynamic components",
+        "Giúp cải thiện đáng kể chỉ số TTFB (Time to First Byte) và FCP (First Contentful Paint)"
+      ],
+      expectedKeywords: ["PPR", "Suspense", "stream", "HTML shell", "Next.js 15", "Dynamic", "Static"],
+      techLeadModelAnswer: `Cơ chế PPR:
+1. **Build Time**: Next.js compiler quét qua route. Mọi thành phần tĩnh được render ra HTML bình thường. Các component động bọc trong \`<Suspense>\` được render thành các placeholder tĩnh (Suspense fallbacks).
+2. **Request Time**: Trình duyệt nhận ngay lập tức HTML shell tĩnh (gần như tức thời từ CDN). Sau đó, máy xuất bản chạy phần code động của các Dynamic component song song và truyền tải kết quả qua luồng HTTP stream dưới dạng các đoạn chunk HTML/JS tiếp theo, React sẽ tự động chèn đúng vào vị trí của placeholder mà không cần render lại toàn bộ trang.`
+    }
+  ];
+
   const handleGenerateAiQuestion = async () => {
     setIsGeneratingQuestion(true);
     handleStopVoice();
+    
+    const activeModel = aiService.getActiveModelName();
+    
     try {
       const prompt = `
 Hãy tạo 1 CÂU HỎI PHỎNG VẤN PHẦN CỨNG FRONTEND 2026 MỚI ĐỘC ĐÁO.
@@ -339,11 +439,23 @@ Trả về ĐÚNG JSON nguyên bản:
         };
         setQuestions(prev => [newQ, ...prev]);
         setCurrentIndex(0);
-        alert('🎉 Đã sinh xong câu hỏi FE 2026 mới từ AI!');
+        alert(`🎉 Đã tạo thành công câu hỏi FE 2026 bằng mô hình ${activeModel}!`);
+      } else {
+        throw new Error("Dữ liệu JSON sinh từ AI không hợp lệ.");
       }
-    } catch (e) {
-      console.error('Lỗi khi tạo câu hỏi AI:', e);
-      alert('Không thể tạo câu hỏi mới lúc này. Vui lòng kiểm tra lại API Key!');
+    } catch (e: any) {
+      console.warn('Sinh câu hỏi bằng AI thất bại, đang kích hoạt Ngân hàng Dự phòng:', e.message || e);
+      // Failover to local fallback pool!
+      const randomIdx = Math.floor(Math.random() * LOCAL_FALLBACK_INTERVIEW_QUESTIONS.length);
+      const fallbackQ = LOCAL_FALLBACK_INTERVIEW_QUESTIONS[randomIdx];
+      const newFallbackQ = {
+        ...fallbackQ,
+        id: `${fallbackQ.id}-${Date.now()}` // Make unique ID
+      };
+      
+      setQuestions(prev => [newFallbackQ, ...prev]);
+      setCurrentIndex(0);
+      alert('💡 Do API Key của bạn chưa được nạp hoặc hết hạn, hệ thống đã nạp ngẫu nhiên một Câu hỏi phỏng vấn FE 2026 cực kỳ thực tế từ Ngân hàng Dự phòng Offline!');
     } finally {
       setIsGeneratingQuestion(false);
     }
@@ -385,19 +497,29 @@ Trả về ĐÚNG JSON nguyên bản:
             </div>
           </div>
 
-          {/* Session Performance Meter */}
-          <div className="flex items-center gap-4 bg-[#0B0D11] px-4 py-2 rounded-xl border border-slate-800 font-mono text-xs">
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4 text-[#C9962C]" />
-              <span className="text-slate-400">Đã trả lời:</span>
-              <span className="font-bold text-white">{sessionScores.length} câu</span>
+          {/* Session Performance Meter & Settings Key */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 bg-[#0B0D11] px-4 py-2 rounded-xl border border-slate-800 font-mono text-xs">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#C9962C]" />
+                <span className="text-slate-400">Đã trả lời:</span>
+                <span className="font-bold text-white">{sessionScores.length} câu</span>
+              </div>
+              <div className="h-4 w-px bg-slate-800" />
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+                <span className="text-slate-400">Điểm Trung Bình:</span>
+                <span className="font-bold text-emerald-400 text-sm">{avgScore} / 10</span>
+              </div>
             </div>
-            <div className="h-4 w-px bg-slate-800" />
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
-              <span className="text-slate-400">Điểm Trung Bình:</span>
-              <span className="font-bold text-emerald-400 text-sm">{avgScore} / 10</span>
-            </div>
+
+            <button
+              onClick={() => setIsKeyModalOpen(true)}
+              className="p-2 rounded-xl bg-[#0B0D11] border border-slate-800 hover:border-[#5B54D9] text-slate-400 hover:text-white transition-all cursor-pointer"
+              title="Cấu hình AI API Keys"
+            >
+              <Key className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
@@ -880,6 +1002,12 @@ Trả về ĐÚNG JSON nguyên bản:
           </div>
         )}
       </div>
+      {/* Key configurations modal */}
+      <ApiKeyModal
+        isOpen={isKeyModalOpen}
+        onClose={() => setIsKeyModalOpen(false)}
+        onSaved={() => {}}
+      />
     </div>
   );
 };

@@ -9,8 +9,8 @@ interface ApiKeyModalProps {
 }
 
 export const ApiKeyModal: React.FC<ApiKeyModalProps> = ({ isOpen, onClose, onSaved }) => {
-  const [geminiKey, setGeminiKey] = useState<string>(aiService.getGeminiKeys().join(', '));
-  const [openAIKey, setOpenAIKey] = useState<string>(aiService.getOpenAIKeys().join(', '));
+  const [geminiKey, setGeminiKey] = useState<string>(aiService.getLocalGeminiKeys().join(', '));
+  const [openAIKey, setOpenAIKey] = useState<string>(aiService.getLocalOpenAIKeys().join(', '));
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isTesting, setIsTesting] = useState<boolean>(false);
   const [testResults, setTestResults] = useState<{ key: string; status: 'ok' | '429' | 'invalid'; msg: string }[] | null>(null);

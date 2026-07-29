@@ -83,12 +83,22 @@ export const aiService = {
     return list;
   },
 
+  // Get ONLY user-configured local keys from localStorage
+  getLocalGeminiKeys(): string[] {
+    const localKey = localStorage.getItem('fe_gemini_api_key');
+    return localKey ? localKey.split(',').map(k => k.trim()).filter(Boolean) : [];
+  },
+
+  getLocalOpenAIKeys(): string[] {
+    const localKey = localStorage.getItem('fe_openai_api_key');
+    return localKey ? localKey.split(',').map(k => k.trim()).filter(Boolean) : [];
+  },
+
   // Parse and clean all Gemini keys from .env.local and localStorage
   getGeminiKeys(): string[] {
     const metaEnv = (import.meta as any).env;
     const envKeys = (metaEnv && metaEnv.VITE_GEMINI_API_KEY) ? metaEnv.VITE_GEMINI_API_KEY.split(',') : [];
-    const localKey = localStorage.getItem('fe_gemini_api_key');
-    const localKeys = localKey ? localKey.split(',') : [];
+    const localKeys = this.getLocalGeminiKeys();
 
     const combined = [...localKeys, ...envKeys].map(k => k.trim()).filter(Boolean);
     return Array.from(new Set(combined.filter(k => !k.startsWith('sk-'))));
@@ -98,22 +108,21 @@ export const aiService = {
   getOpenAIKeys(): string[] {
     const metaEnv = (import.meta as any).env;
     const envKeys = (metaEnv && metaEnv.VITE_OPENAI_API_KEY) ? metaEnv.VITE_OPENAI_API_KEY.split(',') : [];
-    const localKey = localStorage.getItem('fe_openai_api_key');
-    const localKeys = localKey ? localKey.split(',') : [];
+    const localKeys = this.getLocalOpenAIKeys();
 
     const combined = [...localKeys, ...envKeys].map(k => k.trim()).filter(Boolean);
     return Array.from(new Set(combined.filter(k => k.startsWith('sk-'))));
   },
 
   getStoredApiKey(): string {
-    const gemini = this.getGeminiKeys().join(', ');
-    const openai = this.getOpenAIKeys().join(', ');
+    const gemini = this.getLocalGeminiKeys().join(', ');
+    const openai = this.getLocalOpenAIKeys().join(', ');
     return gemini || openai || '';
   },
 
   setStoredApiKey(geminiKey: string, openaiKey?: string) {
-    if (geminiKey) localStorage.setItem('fe_gemini_api_key', geminiKey.trim());
-    if (openaiKey) localStorage.setItem('fe_openai_api_key', openaiKey.trim());
+    if (geminiKey !== undefined) localStorage.setItem('fe_gemini_api_key', geminiKey.trim());
+    if (openaiKey !== undefined) localStorage.setItem('fe_openai_api_key', openaiKey.trim());
   },
 
   formatAiError(err: any): string {

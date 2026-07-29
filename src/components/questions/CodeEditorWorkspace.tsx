@@ -246,40 +246,51 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
       const results: { pass: boolean; msg: string }[] = [];
       const intercepted: string[] = [];
 
-      const sandboxConsole = {
-        log: (...args: any[]) => {
-          intercepted.push(args.map(arg => {
-            if (arg === null) return 'null';
-            if (arg === undefined) return 'undefined';
-            if (typeof arg === 'object') {
-              try {
-                return JSON.stringify(arg, null, 2);
-              } catch (e) {
-                return '[Circular/Object]';
-              }
+      // Save original console methods
+      const originalConsole = {
+        log: window.console.log,
+        warn: window.console.warn,
+        error: window.console.error
+      };
+
+      // Override console methods temporarily
+      window.console.log = (...args: any[]) => {
+        intercepted.push(args.map(arg => {
+          if (arg === null) return 'null';
+          if (arg === undefined) return 'undefined';
+          if (typeof arg === 'object') {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch (e) {
+              return '[Circular/Object]';
             }
-            return String(arg);
-          }).join(' '));
-        },
-        error: (...args: any[]) => {
-          intercepted.push('❌ Error: ' + args.map(arg => String(arg)).join(' '));
-        },
-        warn: (...args: any[]) => {
-          intercepted.push('⚠️ Warning: ' + args.map(arg => String(arg)).join(' '));
-        }
+          }
+          return String(arg);
+        }).join(' '));
+        originalConsole.log.apply(window.console, args);
+      };
+
+      window.console.warn = (...args: any[]) => {
+        intercepted.push('⚠️ Warning: ' + args.map(arg => String(arg)).join(' '));
+        originalConsole.warn.apply(window.console, args);
+      };
+
+      window.console.error = (...args: any[]) => {
+        intercepted.push('❌ Error: ' + args.map(arg => String(arg)).join(' '));
+        originalConsole.error.apply(window.console, args);
       };
 
       try {
         // 1. Verify code syntax compilation
-        const compilationCheck = new Function('console', executableCode);
-        compilationCheck(sandboxConsole);
+        const compilationCheck = new Function(executableCode);
+        compilationCheck();
         logs.push("✅ Biên dịch mã nguồn hợp lệ không có lỗi cú pháp!");
 
         if (question.testCases && question.testCases.length > 0) {
           question.testCases.forEach((tc, idx) => {
             try {
-              const testFn = new Function('console', executableCode + "\nreturn (" + tc.input + ");");
-              const actual = testFn(sandboxConsole);
+              const testFn = new Function(executableCode + "\nreturn (" + tc.input + ");");
+              const actual = testFn();
               const expectedStr = JSON.stringify(tc.expected);
               const actualStr = JSON.stringify(actual);
 
@@ -318,6 +329,11 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
         logs.push(`✗ Compilation Error: ${err.message}`);
         results.push({ pass: false, msg: `✗ ${err.message}` });
         setFeedbackStatus("failed");
+      } finally {
+        // RESTORE original console methods immediately!
+        window.console.log = originalConsole.log;
+        window.console.warn = originalConsole.warn;
+        window.console.error = originalConsole.error;
       }
 
       setConsoleLogs(intercepted);
