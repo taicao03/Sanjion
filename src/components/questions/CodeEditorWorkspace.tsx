@@ -132,7 +132,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
       setAiResult(null);
       setActiveTab("problem");
     }
-  }, [question.id, progress]);
+  }, [question.id]);
 
   const triggerConfetti = () => {
     // Editor Noir: Bỏ hiệu ứng pháo hoa confetti phô trương,
