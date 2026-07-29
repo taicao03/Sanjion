@@ -24,8 +24,6 @@ export const SuccessNextQuestionModal: React.FC<SuccessNextQuestionModalProps> =
   onGenerateNextWithAI,
   onBackToBank,
 }) => {
-  if (!isOpen) return null;
-
   const activeModel = aiService.getActiveModelName();
 
   // Find another question with same difficulty & category that is not the current question

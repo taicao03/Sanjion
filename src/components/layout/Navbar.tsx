@@ -265,7 +265,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </div>
                   </div>
 
-                  {isAdminOrOwner ? (
+                  {isAdminOrOwner && (
                     <button
                       onClick={() => {
                         setIsMenuOpen(false);
@@ -275,23 +275,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                     >
                       <Crown className="w-4 h-4 text-[#C9962C]" />
                       Trang Quản Trị Admin
-                    </button>
-                  ) : (
-                    <button
-                      onClick={async () => {
-                        setIsMenuOpen(false);
-                        const updated = storageService.updateProfile({ role: 'ADMIN' });
-                        if (apiService.isBackendConnected() && profile.id && profile.id !== 'guest') {
-                          await apiService.updateUserRoleInDatabase(profile.id, 'ADMIN');
-                        }
-                        onProfileUpdated(updated);
-                        onSelectView("admin");
-                      }}
-                      className="w-full flex items-center gap-2 p-2 rounded text-xs text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 transition-colors cursor-pointer font-bold"
-                      title="Bật quyền Quản Trị Viên ngay lập tức"
-                    >
-                      <Crown className="w-4 h-4 text-purple-400 animate-pulse" />
-                      Kích Hoạt Quyền Admin
                     </button>
                   )}
 

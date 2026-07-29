@@ -103,8 +103,18 @@ export function App() {
   useEffect(() => {
     if (isCurrentUserBlocked) {
       document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isCurrentUserBlocked]);
+
+  // Ensure body overflow is always restored whenever view changes
+  useEffect(() => {
+    document.body.style.overflow = "";
+  }, [currentView]);
 
   // ✨ DIRECT AI GENERATION STATES FOR SAME TOPIC & DIFFICULTY ✨
   const [isDirectAiGenerating, setIsDirectAiGenerating] =
@@ -602,24 +612,10 @@ export function App() {
 
       {/* ADMIN ACCESS DENIED NOTIFICATION BANNER */}
       {adminAccessDeniedNotice && (
-        <div className="fixed bottom-6 right-6 z-[99999] bg-[#161B22] border border-amber-500/50 text-amber-300 px-5 py-4 rounded-2xl shadow-2xl font-mono text-xs font-bold flex flex-wrap items-center gap-3 animate-slideUp">
+        <div className="fixed bottom-6 right-6 z-[99999] bg-[#161B22] border border-amber-500/50 text-amber-300 px-5 py-4 rounded-2xl shadow-2xl font-mono text-xs font-bold flex items-center gap-3 animate-slideUp">
           <span className="text-base">⚠️</span>
           <span>{adminAccessDeniedNotice}</span>
-          <button
-            onClick={async () => {
-              const updated = storageService.updateProfile({ role: 'ADMIN' });
-              setProfile(updated);
-              if (isSupabaseConfigured && supabase && profile.id && profile.id !== 'guest') {
-                await apiService.updateUserRoleInDatabase(profile.id, 'ADMIN');
-              }
-              setAdminAccessDeniedNotice(null);
-              setCurrentView('admin');
-            }}
-            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-xs shadow-md shadow-purple-600/30 cursor-pointer ml-auto flex items-center gap-1"
-          >
-            <span>⚡ Bật Quyền Admin Ngay</span>
-          </button>
-          <button onClick={() => setAdminAccessDeniedNotice(null)} className="text-slate-400 hover:text-white ml-2 cursor-pointer">
+          <button onClick={() => setAdminAccessDeniedNotice(null)} className="text-slate-400 hover:text-white ml-2 cursor-pointer p-1 rounded hover:bg-slate-800 transition-colors">
             ✕
           </button>
         </div>
