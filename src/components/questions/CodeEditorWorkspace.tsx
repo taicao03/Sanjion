@@ -83,6 +83,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
   );
 
   const [outputLogs, setOutputLogs] = useState<string[]>([]);
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [testResults, setTestResults] = useState<
     { pass: boolean; msg: string }[]
   >([]);
@@ -115,6 +116,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
     setSelectedQuizOption(null);
     setTheoryAnswerInput(progress?.userAnswer || "");
     setOutputLogs([]);
+    setConsoleLogs([]);
     setTestResults([]);
     setFeedbackStatus(progress?.status === "SOLVED" ? "success" : "idle");
     setValidationError(null);
@@ -234,6 +236,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
 
     setIsEvaluating(true);
     setTestResults([]);
+    setConsoleLogs([]);
     setOutputLogs(["🚀 Đang khởi chạy JavaScript Sandbox Environment..."]);
 
     const executableCode = prepareCodeForRunner(code);
@@ -241,18 +244,42 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
     setTimeout(() => {
       const logs: string[] = ["Executing Solution Code..."];
       const results: { pass: boolean; msg: string }[] = [];
+      const intercepted: string[] = [];
+
+      const sandboxConsole = {
+        log: (...args: any[]) => {
+          intercepted.push(args.map(arg => {
+            if (arg === null) return 'null';
+            if (arg === undefined) return 'undefined';
+            if (typeof arg === 'object') {
+              try {
+                return JSON.stringify(arg, null, 2);
+              } catch (e) {
+                return '[Circular/Object]';
+              }
+            }
+            return String(arg);
+          }).join(' '));
+        },
+        error: (...args: any[]) => {
+          intercepted.push('❌ Error: ' + args.map(arg => String(arg)).join(' '));
+        },
+        warn: (...args: any[]) => {
+          intercepted.push('⚠️ Warning: ' + args.map(arg => String(arg)).join(' '));
+        }
+      };
 
       try {
         // 1. Verify code syntax compilation
-        const compilationCheck = new Function(executableCode);
-        compilationCheck();
+        const compilationCheck = new Function('console', executableCode);
+        compilationCheck(sandboxConsole);
         logs.push("✅ Biên dịch mã nguồn hợp lệ không có lỗi cú pháp!");
 
         if (question.testCases && question.testCases.length > 0) {
           question.testCases.forEach((tc, idx) => {
             try {
-              const testFn = new Function(executableCode + "\n" + tc.input);
-              const actual = testFn();
+              const testFn = new Function('console', executableCode + "\nreturn (" + tc.input + ");");
+              const actual = testFn(sandboxConsole);
               const expectedStr = JSON.stringify(tc.expected);
               const actualStr = JSON.stringify(actual);
 
@@ -293,6 +320,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
         setFeedbackStatus("failed");
       }
 
+      setConsoleLogs(intercepted);
       setOutputLogs(logs);
       setTestResults(results);
       setIsEvaluating(false);
@@ -1116,7 +1144,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
             <div className="flex items-center justify-between text-[#8B94A3] mb-2 pb-1 border-b border-white/[0.04]">
               <span className="font-bold flex items-center gap-1">
                 <FileCode className="w-3.5 h-3.5 text-[#C9962C]" />
-                Console Output (Git Diff Format):
+                Console & Test Output:
               </span>
               {feedbackStatus === "success" && (
                 <span className="text-[#2FAE79] font-bold flex items-center gap-1">
@@ -1126,27 +1154,47 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
               )}
             </div>
 
-            {testResults.length > 0 ? (
-              <div className="space-y-1">
-                {testResults.map((tr, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex items-center gap-2 ${tr.pass ? "text-[#2FAE79]" : "text-[#C1553B]"}`}
-                  >
-                    <span>{tr.msg}</span>
+            <div className="space-y-3">
+              {/* 1. Captured console.log output */}
+              {consoleLogs.length > 0 && (
+                <div className="space-y-1 bg-[#090D14] p-2.5 rounded border border-white/[0.04]">
+                  <div className="text-[10px] text-[#2FAE79] font-extrabold tracking-wider uppercase mb-1">
+                    Stdout Logs:
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-1 text-[#8B94A3]">
-                {outputLogs.map((log, idx) => (
-                  <div key={idx}>{log}</div>
-                ))}
-                {outputLogs.length === 0 && (
-                  <div>$ Press "Chạy Test Code" to execute test runner...</div>
-                )}
-              </div>
-            )}
+                  {consoleLogs.map((log, idx) => (
+                    <div key={idx} className="text-slate-300 whitespace-pre-wrap break-all">
+                      {log}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 2. Test Case Results */}
+              {testResults.length > 0 ? (
+                <div className="space-y-1">
+                  <div className="text-[10px] text-amber-400 font-extrabold tracking-wider uppercase mb-1">
+                    Test Cases:
+                  </div>
+                  {testResults.map((tr, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-center gap-2 ${tr.pass ? "text-[#2FAE79]" : "text-[#C1553B]"}`}
+                    >
+                      <span>{tr.msg}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-1 text-[#8B94A3]">
+                  {outputLogs.map((log, idx) => (
+                    <div key={idx}>{log}</div>
+                  ))}
+                  {outputLogs.length === 0 && (
+                    <div>$ Press "Chạy Test Code" to execute test runner...</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

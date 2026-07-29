@@ -64,6 +64,10 @@ export const FEVoiceInterviewPage: React.FC = () => {
   // AI Generating Custom Question
   const [isGeneratingQuestion, setIsGeneratingQuestion] = useState<boolean>(false);
 
+  // Console execution state
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+  const [showConsole, setShowConsole] = useState<boolean>(false);
+
   const currentQuestion = questions[currentIndex] || questions[0];
 
   // Ref tracking for latest speech values inside effects
@@ -173,6 +177,65 @@ export const FEVoiceInterviewPage: React.FC = () => {
   const handleStopVoice = () => {
     speechService.stop();
     setIsSpeaking(false);
+  };
+
+  const handleRunCode = () => {
+    setConsoleLogs([]);
+    setShowConsole(true);
+
+    if (!codeAnswer || !codeAnswer.trim()) {
+      setConsoleLogs(['⚠️ Chưa có mã nguồn để chạy thử. Hãy gõ code vào trình soạn thảo!']);
+      return;
+    }
+
+    const logs: string[] = [];
+    const sandboxConsole = {
+      log: (...args: any[]) => {
+        logs.push(args.map(arg => {
+          if (arg === null) return 'null';
+          if (arg === undefined) return 'undefined';
+          if (typeof arg === 'object') {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch (e) {
+              return '[Circular/Object]';
+            }
+          }
+          return String(arg);
+        }).join(' '));
+      },
+      error: (...args: any[]) => {
+        logs.push('❌ Error: ' + args.map(arg => String(arg)).join(' '));
+      },
+      warn: (...args: any[]) => {
+        logs.push('⚠️ Warning: ' + args.map(arg => String(arg)).join(' '));
+      }
+    };
+
+    try {
+      let runnableCode = codeAnswer
+        .replace(/^import\s+[\s\S]*?from\s+['"].*?['"];?/gm, "")
+        .replace(/^import\s+['"].*?['"];?/gm, "")
+        .replace(/^export\s+default\s+.*?;?/gm, "")
+        .replace(/^export\s+(const|let|var|function|class)/gm, "$1");
+
+      const runner = new Function('console', `
+        try {
+          ${runnableCode}
+        } catch (err) {
+          console.error(err.message || err);
+        }
+      `);
+
+      runner(sandboxConsole);
+
+      if (logs.length === 0) {
+        logs.push('✓ Mã nguồn đã chạy thành công (Không có lệnh log kết quả nào).');
+      }
+      setConsoleLogs(logs);
+    } catch (err: any) {
+      setConsoleLogs([`❌ Lỗi biên dịch: ${err.message || err}`]);
+    }
   };
 
   const handleSubmitAnswer = async () => {
@@ -612,7 +675,15 @@ Trả về ĐÚNG JSON nguyên bản:
                   <Code2 className="w-4 h-4 text-emerald-400" />
                   <span>2. Viết Mã Nguồn Ví Dụ (Code Snippet)</span>
                 </label>
-                <span className="text-[11px] font-mono text-emerald-400">TypeScript / React 19</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleRunCode}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#2FAE79]/15 text-[#2FAE79] border border-[#2FAE79]/30 hover:bg-[#2FAE79]/25 transition-all text-[10px] font-mono font-bold cursor-pointer"
+                  >
+                    <span>▶ Run Code</span>
+                  </button>
+                  <span className="text-[11px] font-mono text-emerald-400">TypeScript / React 19</span>
+                </div>
               </div>
               <p className="text-xs text-slate-400 mb-3">
                 Viết đoạn code minh họa hoặc giải pháp kỹ thuật cụ thể (Monaco Editor hỗ trợ Syntax Highlight).
@@ -636,6 +707,33 @@ Trả về ĐÚNG JSON nguyên bản:
                   }}
                 />
               </div>
+
+              {showConsole && (
+                <div className="mt-3 bg-[#090D14] border border-slate-800 rounded-xl p-3 font-mono text-xs space-y-2 animate-fadeIn max-h-[160px] overflow-y-auto">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1.5">
+                    <span className="text-[10px] text-[#2FAE79] font-bold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#2FAE79] animate-pulse" />
+                      TERMINAL CONSOLE LOGS
+                    </span>
+                    <button 
+                      onClick={() => {
+                        setConsoleLogs([]);
+                        setShowConsole(false);
+                      }}
+                      className="text-slate-400 hover:text-white text-[10px] cursor-pointer"
+                    >
+                      Ẩn console ✕
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    {consoleLogs.map((log, idx) => (
+                      <div key={idx} className="whitespace-pre-wrap break-all text-slate-300">
+                        {log}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Submit Action Button */}
