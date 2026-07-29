@@ -16,6 +16,7 @@ import {
   Crown,
   ShieldCheck,
   Key,
+  Mic,
 } from "lucide-react";
 import { UserProfile } from "../../types";
 import { apiService } from "../../services/apiService";
@@ -154,6 +155,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <Bookmark
                 className={`w-4 h-4 ${currentView === "bookmarks" ? "text-[#C9962C]" : "text-[#8B94A3]"}`}
+              />
+            </button>
+
+            <button
+              onClick={() => onSelectView("voice-interview")}
+              title="Phỏng Vấn Voice FE 2026"
+              className={`flex items-center justify-center w-11 h-14 border-b-2 transition-all cursor-pointer ${
+                currentView === "voice-interview"
+                  ? "border-[#C9962C] bg-[#0B0D11]/60 text-[#FFFFFF]"
+                  : "border-transparent text-[#8B94A3] hover:text-[#FFFFFF] hover:bg-white/[0.04]"
+              }`}
+            >
+              <Mic
+                className={`w-4 h-4 ${currentView === "voice-interview" ? "text-[#C9962C]" : "text-[#8B94A3]"}`}
               />
             </button>
 
@@ -392,6 +407,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           <Bookmark className="w-4 h-4" />
           <span>Đã Lưu</span>
+        </button>
+
+        <button
+          onClick={() => onSelectView("voice-interview")}
+          className={`flex flex-col items-center gap-0.5 text-[10px] transition-all ${
+            currentView === "voice-interview" ? "text-[#C9962C]" : "text-[#8B94A3]"
+          }`}
+        >
+          <Mic className="w-4 h-4" />
+          <span>Voice 2026</span>
         </button>
 
         {isAdminOrOwner && (

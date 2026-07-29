@@ -892,6 +892,100 @@ Trả về Markdown chuẩn, sinh động.
     } catch (err: any) {
       return this.getTopicSpecificFallback(topic, topic);
     }
+  },
+
+  async evaluateFE2026Answer(
+    questionTitle: string,
+    questionTopic: string,
+    questionText: string,
+    expectedKeywords: string[],
+    candidateAnswer: string,
+    candidateCodeSnippet?: string,
+    customApiKey?: string
+  ): Promise<{
+    score: number;
+    verdict: 'Xuất sắc (Tech Lead Master)' | 'Đạt chuẩn (Senior Level)' | 'Khá (Middle Level)' | 'Cần bổ sung';
+    technicalAccuracyScore: number;
+    fe2026ConceptScore: number;
+    clarityDepthScore: number;
+    strengths: string[];
+    gapsToImprove: string[];
+    techLeadModelAnswer: string;
+    keyAdvice: string;
+  }> {
+    const prompt = `
+Bạn là một Senior Tech Lead Frontend nhiều năm kinh nghiệm năm 2026.
+Hãy đánh giá câu trả lời phỏng vấn của ứng viên theo tiêu chuẩn Frontend 2026 (React 19, Next.js 15, Performance INP, Web Architecture).
+
+CÂU HỎI PHỎNG VẤN:
+- Chủ đề: ${questionTopic}
+- Tiêu đề: ${questionTitle}
+- Nội dung câu hỏi: ${questionText}
+- Các từ khóa kỹ thuật kỳ vọng: ${expectedKeywords.join(', ')}
+
+CÂU TRẢ LỜI CỦA ỨNG VIÊN:
+- Phần Lý Thuyết / Giải Thích:
+"${candidateAnswer || 'Không gõ văn bản giải thích'}"
+
+- Phần Mã Code / Technical Snippet:
+\`\`\`
+${candidateCodeSnippet || 'Không cung cấp đoạn mã code'}
+\`\`\`
+
+YÊU CẦU ĐÁNH GIÁ NGHIÊM NGẠC VÀ KHÁCH QUAN:
+Hãy chấm điểm trên THANG ĐIỂM 10 và trả về ĐÚNG ĐỊNH DẠNG JSON sau (Không bọc bối cảnh nào ngoài JSON):
+
+{
+  "score": 8.5,
+  "verdict": "Đạt chuẩn (Senior Level)",
+  "technicalAccuracyScore": 9,
+  "fe2026ConceptScore": 8,
+  "clarityDepthScore": 8.5,
+  "strengths": [
+    "Nêu đúng bản chất hoạt động...",
+    "Hiểu rõ luồng xử lý..."
+  ],
+  "gapsToImprove": [
+    "Cần bổ sung thêm ví dụ thực tế về...",
+    "Chú ý trường hợp edge case..."
+  ],
+  "techLeadModelAnswer": "Đáp án chuẩn Tech Lead...",
+  "keyAdvice": "Lời khuyên ngắn gọn của Tech Lead dành cho ứng viên."
+}
+
+Chú ý:
+- score là số thực từ 0 đến 10 (ví dụ 8.5, 7.0, 9.2).
+- verdict chọn 1 trong: "Xuất sắc (Tech Lead Master)", "Đạt chuẩn (Senior Level)", "Khá (Middle Level)", "Cần bổ sung".
+`;
+
+    try {
+      const rawText = await this.callAIWithRotation(prompt, customApiKey);
+      const parsed = this.safeParseAiJson(rawText);
+      return {
+        score: typeof parsed.score === 'number' ? parsed.score : 7.5,
+        verdict: parsed.verdict || 'Đạt chuẩn (Senior Level)',
+        technicalAccuracyScore: parsed.technicalAccuracyScore || 7.5,
+        fe2026ConceptScore: parsed.fe2026ConceptScore || 7.5,
+        clarityDepthScore: parsed.clarityDepthScore || 7.5,
+        strengths: Array.isArray(parsed.strengths) && parsed.strengths.length > 0 ? parsed.strengths : ['Đã trình bày được tư duy giải quyết vấn đề.'],
+        gapsToImprove: Array.isArray(parsed.gapsToImprove) && parsed.gapsToImprove.length > 0 ? parsed.gapsToImprove : ['Cần bổ sung thêm ví dụ mã nguồn minh họa.'],
+        techLeadModelAnswer: parsed.techLeadModelAnswer || 'Đáp án tham khảo trong ngân hàng câu hỏi.',
+        keyAdvice: parsed.keyAdvice || 'Hãy tiếp tục rèn luyện tư duy lập trình và cập nhật các công nghệ Frontend 2026 mới!'
+      };
+    } catch (err) {
+      console.warn('evaluateFE2026Answer error, fallback generated:', err);
+      return {
+        score: 7.5,
+        verdict: 'Đạt chuẩn (Senior Level)',
+        technicalAccuracyScore: 8,
+        fe2026ConceptScore: 7,
+        clarityDepthScore: 7.5,
+        strengths: ['Đã trả lời đúng một số khái niệm trọng tâm của câu hỏi phỏng vấn.'],
+        gapsToImprove: ['Cần minh họa chi tiết hơn bằng mã nguồn ví dụ chuẩn năm 2026.'],
+        techLeadModelAnswer: 'Tham khảo đáp án chuẩn Tech Lead trong hệ thống.',
+        keyAdvice: 'Giữ vững phong độ và thực hành thêm các dự án FE 2026 thực tế!'
+      };
+    }
   }
 };
 

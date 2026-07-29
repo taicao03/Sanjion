@@ -36,10 +36,11 @@ import { AuthModal } from "./components/auth/AuthModal";
 import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { TextSelectionToolbar } from "./components/shared/TextSelectionToolbar";
 import { getUserLevel, LevelUpModal, LevelTier } from "./components/shared/LevelUpModal";
+import { FEVoiceInterviewPage } from "./components/voice-interview/FEVoiceInterviewPage";
 
 export function App() {
   const [currentView, setCurrentView] = useState<
-    "dashboard" | "questions" | "workspace" | "bookmarks" | "roadmap" | "admin"
+    "dashboard" | "questions" | "workspace" | "bookmarks" | "roadmap" | "admin" | "voice-interview"
   >(() => {
     const saved = localStorage.getItem("fe_sanjion_active_view");
     return (saved as any) || "roadmap";
@@ -528,6 +529,8 @@ export function App() {
               </div>
             )}
           </div>
+        ) : currentView === "voice-interview" ? (
+          <FEVoiceInterviewPage />
         ) : (
           /* Bookmarks View */
           <div className="space-y-4 sm:space-y-6 animate-fadeIn font-mono">
