@@ -284,7 +284,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
         if (question.testCases && question.testCases.length > 0) {
           question.testCases.forEach((tc, idx) => {
             try {
-              const testFn = new Function(executableCode + "\nreturn (" + tc.input + ");");
+              const testFn = new Function(executableCode + "\n" + tc.input);
               const actual = testFn();
               const expectedStr = JSON.stringify(tc.expected);
               const actualStr = JSON.stringify(actual);
@@ -399,7 +399,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
         if (question.testCases && question.testCases.length > 0) {
           question.testCases.forEach((tc, idx) => {
             try {
-              const testFn = new Function(executableCode + "\nreturn (" + tc.input + ");");
+              const testFn = new Function(executableCode + "\n" + tc.input);
               const actual = testFn();
               const expectedStr = JSON.stringify(tc.expected);
               const actualStr = JSON.stringify(actual);
