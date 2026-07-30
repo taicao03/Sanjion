@@ -187,6 +187,12 @@ export const authService = {
             localProf.totalPoints || 0
           );
 
+      const dbStatus: 'ACTIVE' | 'BLOCKED' = profileData?.status === 'BLOCKED' ||
+        adminService.isUserBlocked(user.id) ||
+        (user.email && adminService.isUserBlocked(user.email))
+          ? 'BLOCKED'
+          : 'ACTIVE';
+
       const profile: UserProfile = {
         id: user.id,
         username: finalUsername,
@@ -197,6 +203,7 @@ export const authService = {
         targetLevel: isDeletedAccount ? 'Junior' : (profileData?.target_level || 'Junior'),
         totalPoints: highestPoints,
         role: effectiveRole,
+        status: dbStatus,
         email: user.email,
         provider: detectedProvider,
       };
@@ -204,6 +211,16 @@ export const authService = {
       // Sync user profile to local storage & admin accounts list
       storageService.updateProfile(profile);
       adminService.saveOAuthAccount(profile);
+
+      // If DB status is BLOCKED, ensure local admin storage also reflects BLOCKED
+      if (profileData?.status === 'BLOCKED') {
+        const users = adminService.getUsers();
+        const target = users.find(u => u.id === user.id || (user.email && u.email === user.email));
+        if (target && target.status !== 'BLOCKED') {
+          target.status = 'BLOCKED';
+          adminService.saveUsers(users);
+        }
+      }
 
       return { user, profile };
         }

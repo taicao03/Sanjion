@@ -86,10 +86,72 @@ export function App() {
 
   // Check if current user is BLOCKED
   const isCurrentUserBlocked = Boolean(
+    profile.status === "BLOCKED" ||
     adminService.isUserBlocked(profile.id) ||
     adminService.isUserBlocked(profile.username) ||
     (profile.email && adminService.isUserBlocked(profile.email))
   );
+
+  // Realtime synchronization for User Profile, Status (Block/Active), Role & Points
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase || !profile.id || profile.id === "guest" || profile.id === "") return;
+
+    const channel = supabase
+      .channel(`realtime_profile_${profile.id}`)
+      .on(
+        "postgres_changes" as any,
+        {
+          event: "*",
+          schema: "public",
+          table: "user_profiles",
+          filter: `id=eq.${profile.id}`,
+        },
+        (payload: any) => {
+          console.log("⚡ [Supabase Realtime Profile Update]:", payload);
+          if (payload.eventType === "DELETE") {
+            // Account was deleted by Admin
+            storageService.clearAllData();
+            authService.logout().then(() => {
+              window.location.reload();
+            });
+          } else if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
+            const updatedData = payload.new;
+            if (updatedData) {
+              const newStatus = updatedData.status || "ACTIVE";
+              const newRole = updatedData.role || profile.role;
+              const newPoints = updatedData.total_points ?? profile.totalPoints;
+
+              setProfile((prev) => {
+                const next = {
+                  ...prev,
+                  status: newStatus,
+                  role: newRole,
+                  totalPoints: newPoints,
+                };
+                storageService.updateProfile(next);
+                return next;
+              });
+
+              if (newStatus === "BLOCKED") {
+                const users = adminService.getUsers();
+                const target = users.find((u) => u.id === profile.id || (profile.email && u.email === profile.email));
+                if (target && target.status !== "BLOCKED") {
+                  target.status = "BLOCKED";
+                  adminService.saveUsers(users);
+                }
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [profile.id]);
 
   // Automatic Access Control Check for Admin View
   useEffect(() => {

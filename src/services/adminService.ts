@@ -217,7 +217,11 @@ export const adminService = {
       return false;
     }
 
-    // ✨ PURGE ALL USER DATA (Progress, Points, Bookmarks, Activity) ✨
+    // ✨ PURGE ALL USER DATA & ADD TO BLACKLIST ✨
+    this.addDeletedUserIdentifier(target.id);
+    if (target.username) this.addDeletedUserIdentifier(target.username);
+    if (target.email) this.addDeletedUserIdentifier(target.email);
+
     storageService.purgeAllUserData(target.id, target.username, target.email);
 
     const filtered = users.filter(u => u.id !== userId);

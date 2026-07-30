@@ -68,6 +68,7 @@ export interface UserProfile {
   targetLevel: 'Junior' | 'Mid-level' | 'Senior';
   totalPoints: number;
   role: UserRole;
+  status?: 'ACTIVE' | 'BLOCKED';
   email?: string;
   provider?: 'google' | 'github' | 'email' | string;
 }
