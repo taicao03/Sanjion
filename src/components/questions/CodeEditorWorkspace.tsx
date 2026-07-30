@@ -218,6 +218,28 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
     }
   };
 
+  // Helper to accurately compare actual returned result with expected test case output
+  const checkTestCaseMatch = (actual: any, expected: any): boolean => {
+    if (expected === undefined) {
+      return actual !== undefined && actual !== null;
+    }
+    if (actual === expected) {
+      return true;
+    }
+    const actualStr = JSON.stringify(actual);
+    const expectedStr = JSON.stringify(expected);
+    if (actualStr === expectedStr) {
+      return true;
+    }
+    if (typeof actual === "string" && typeof expected === "string") {
+      return actual.trim() === expected.trim();
+    }
+    if (typeof actual === "number" && typeof expected === "number") {
+      return Math.abs(actual - expected) < 1e-6;
+    }
+    return false;
+  };
+
   // 1. SMART FLEXIBLE TEST RUNNER (RUN ONLY - DOES NOT SOLVE OR OPEN MODAL)
   const handleRunTests = () => {
     setValidationError(null);
@@ -289,11 +311,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
               const expectedStr = JSON.stringify(tc.expected);
               const actualStr = JSON.stringify(actual);
 
-              const isMatch =
-                actualStr === expectedStr ||
-                actual === tc.expected ||
-                actual === true ||
-                (typeof actual !== "undefined" && actual !== null);
+              const isMatch = checkTestCaseMatch(actual, tc.expected);
 
               results.push({
                 pass: isMatch,
@@ -404,11 +422,7 @@ export const CodeEditorWorkspace: React.FC<CodeEditorWorkspaceProps> = ({
               const expectedStr = JSON.stringify(tc.expected);
               const actualStr = JSON.stringify(actual);
 
-              const isMatch =
-                actualStr === expectedStr ||
-                actual === tc.expected ||
-                actual === true ||
-                (typeof actual !== "undefined" && actual !== null);
+              const isMatch = checkTestCaseMatch(actual, tc.expected);
 
               if (!isMatch) {
                 allPassed = false;
