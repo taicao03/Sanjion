@@ -37,6 +37,7 @@ import { AdminDashboard } from "./components/admin/AdminDashboard";
 import { TextSelectionToolbar } from "./components/shared/TextSelectionToolbar";
 import { getUserLevel, LevelUpModal, LevelTier } from "./components/shared/LevelUpModal";
 import { FEVoiceInterviewPage } from "./components/voice-interview/FEVoiceInterviewPage";
+import { MockInterviewModal } from "./components/mock-interview/MockInterviewModal";
 
 export function App() {
   const [currentView, setCurrentView] = useState<
@@ -78,6 +79,7 @@ export function App() {
   // Modals
   const [isGenerateModalOpen, setIsGenerateModalOpen] =
     useState<boolean>(false);
+  const [isMockInterviewOpen, setIsMockInterviewOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [adminAccessDeniedNotice, setAdminAccessDeniedNotice] = useState<string | null>(null);
@@ -358,7 +360,7 @@ export function App() {
           }
         }}
         profile={profile}
-        onOpenMockInterview={() => setIsGenerateModalOpen(true)}
+        onOpenMockInterview={() => setIsMockInterviewOpen(true)}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         isLoggedIn={isLoggedIn}
         onLogout={handleLogout}
@@ -611,6 +613,17 @@ export function App() {
         onClose={() => setIsGenerateModalOpen(false)}
         categories={categories}
         onQuestionGenerated={handleQuestionGenerated}
+      />
+
+      {/* 45-Min AI Timed Exam Modal */}
+      <MockInterviewModal
+        isOpen={isMockInterviewOpen}
+        onClose={() => setIsMockInterviewOpen(false)}
+        questions={questions}
+        onSolveQuestion={handleSolveQuestion}
+        isLoggedIn={isLoggedIn}
+        onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        profile={profile}
       />
 
       {/* ADMIN ACCESS DENIED NOTIFICATION BANNER */}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, LogIn, UserPlus, Heart, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { authService } from '../../services/authService';
+import { GmailConfirmEmailModal } from './GmailConfirmEmailModal';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuc
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isGmailConfirmModalOpen, setIsGmailConfirmModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -236,8 +238,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuc
             {mode === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
             {isLoading ? 'Đang xử lý...' : mode === 'login' ? 'Đăng Nhập Email' : 'Tạo Tài Khoản Mới'}
           </button>
+
+          {/* Quick Trigger for Gmail Confirmation Template */}
+          <button
+            type="button"
+            onClick={() => setIsGmailConfirmModalOpen(true)}
+            className="w-full py-2 rounded border border-white/10 hover:border-white/20 bg-[#0B0D11] text-[#2FAE79] text-[11px] font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer mt-3"
+          >
+            <Mail className="w-3.5 h-3.5 text-[#2FAE79]" />
+            <span>✉️ Xem & Gửi Template Email Xác Nhận Gmail (2026)</span>
+          </button>
         </form>
       </div>
+
+      {/* Gmail Account Confirmation Email Template Modal */}
+      <GmailConfirmEmailModal
+        isOpen={isGmailConfirmModalOpen}
+        onClose={() => setIsGmailConfirmModalOpen(false)}
+        targetEmail={email || 'user@gmail.com'}
+        fullName={fullName || 'Học Viên Sanjion'}
+      />
     </div>
   );
 };
