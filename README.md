@@ -44,13 +44,6 @@ npm run build
 Tạo file `.env.local` ở thư mục gốc dự án:
 
 ```env
-# 1. Supabase Backend API Config (Lấy tại project Supabase Settings -> API)
-VITE_SUPABASE_URL=https://llhuubpwlygaylorsxyy.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_rsuTNI9lqp9NqIRj-GUgmA_Yg1Hu5kO
-
-# 2. Google Gemini AI API Key (Lấy miễn phí dạng AIzaSy... tại https://aistudio.google.com/)
-VITE_GEMINI_API_KEY=AIzaSy...
-```
 
 ---
 
